@@ -7,9 +7,9 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #0a0a1a;
-    color: #e0e0e0;
-    font-family: "Noto Serif SC", "SimSun", serif;
+    background: #fafafa;
+    color: #1a1a1a;
+    font-family: 'Inter', 'Noto Serif SC', 'Noto Sans SC', -apple-system, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -23,13 +23,13 @@
   h1 {
     text-align: center;
     font-size: 2em;
-    color: #f0d060;
+    color: #7c3aed;
     margin-bottom: 8px;
     letter-spacing: 8px;
   }
   .subtitle {
     text-align: center;
-    color: #a0a0a0;
+    color: #999999;
     font-size: 0.9em;
     margin-bottom: 30px;
     letter-spacing: 2px;
@@ -41,8 +41,8 @@
     margin-bottom: 30px;
   }
   .hex-card {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    border: 1px solid #2a2a4a;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
     border-radius: 12px;
     padding: 16px 12px;
     text-align: center;
@@ -52,22 +52,22 @@
   }
   .hex-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(240, 208, 96, 0.15);
-    border-color: #f0d060;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.1);
+    border-color: #7c3aed;
   }
   .hex-card.yang-month {
-    border-left: 3px solid #e8a030;
+    border-left: 3px solid #d97706;
   }
   .hex-card.yin-month {
-    border-left: 3px solid #4080d0;
+    border-left: 3px solid #3b82f6;
   }
   .hex-card.peak {
-    border-left: 3px solid #f0d060;
-    box-shadow: 0 0 20px rgba(240, 208, 96, 0.1);
+    border-left: 3px solid #7c3aed;
+    box-shadow: 0 0 12px rgba(124,58,237,0.08);
   }
   .month-label {
     font-size: 0.75em;
-    color: #888;
+    color: #999999;
     margin-bottom: 4px;
   }
   .branch {
@@ -75,12 +75,12 @@
     font-weight: bold;
     margin-bottom: 2px;
   }
-  .yang-month .branch { color: #e8a030; }
-  .yin-month .branch { color: #4080d0; }
-  .peak .branch { color: #f0d060; }
+  .yang-month .branch { color: #d97706; }
+  .yin-month .branch { color: #3b82f6; }
+  .peak .branch { color: #7c3aed; }
   .hex-name {
     font-size: 1.3em;
-    color: #f0d060;
+    color: #7c3aed;
     margin: 6px 0 10px;
     letter-spacing: 4px;
   }
@@ -98,11 +98,11 @@
     border-radius: 2px;
   }
   .line.yang {
-    background: #e8a030;
+    background: #1a1a1a;
     width: 60px;
   }
   .line.yin {
-    background: #4080d0;
+    background: #999999;
     width: 24px;
   }
   .line-pair {
@@ -112,26 +112,26 @@
   }
   .solar-terms {
     font-size: 0.78em;
-    color: #aaa;
+    color: #666666;
     margin-top: 8px;
     line-height: 1.6;
   }
   .solar-terms span {
     display: inline-block;
-    background: #1a1a3a;
+    background: #f0f0f0;
     padding: 2px 8px;
     border-radius: 4px;
     margin: 2px;
   }
   .meaning {
     font-size: 0.72em;
-    color: #888;
+    color: #999999;
     margin-top: 6px;
     font-style: italic;
   }
   .yang-count {
     font-size: 0.7em;
-    color: #666;
+    color: #999999;
     margin-top: 4px;
   }
 
@@ -141,7 +141,7 @@
     text-align: center;
   }
   .circular-section h2 {
-    color: #f0d060;
+    color: #7c3aed;
     font-size: 1.3em;
     margin-bottom: 15px;
     letter-spacing: 4px;
@@ -168,12 +168,12 @@
     height: 4px;
     border-radius: 2px;
   }
-  .legend-color.yang-c { background: #e8a030; }
-  .legend-color.yin-c { background: #4080d0; }
+  .legend-color.yang-c { background: #1a1a1a; }
+  .legend-color.yin-c { background: #999999; }
 
   .footer {
     text-align: center;
-    color: #555;
+    color: #999999;
     font-size: 0.75em;
     margin-top: 20px;
   }
@@ -193,7 +193,7 @@
 
   <div class="circular-section">
     <h2>阴阳消长圆图</h2>
-    <canvas id="circularCanvas" width="700" height="700"></canvas>
+    <canvas id="circularCanvas" width="800" height="800"></canvas>
   </div>
 
   <div class="footer">紫虾仙子 🌹 · 周易六十四卦精讲</div>
@@ -249,20 +249,21 @@ hexagrams.forEach((h, i) => {
 // Draw circular diagram
 const canvas = document.getElementById('circularCanvas');
 const ctx = canvas.getContext('2d');
-const W = 700, H = 700;
+const W = 800, H = 800;
 const cx = W/2, cy = H/2;
 const R = 260;
 
-ctx.fillStyle = '#0a0a1a';
+ctx.fillStyle = '#fafafa';
 ctx.fillRect(0, 0, W, H);
 
 // Title
-ctx.fillStyle = '#f0d060';
+ctx.fillStyle = '#7c3aed';
 ctx.font = '18px "Noto Serif SC", serif';
 ctx.textAlign = 'center';
 ctx.fillText('阳息阴消', cx, cy - R - 50);
 ctx.fillText('︵左半圆：阳气生长︶', cx, cy - R - 30);
 
+ctx.fillStyle = '#7c3aed';
 ctx.fillText('阴消阳长', cx, cy + R + 65);
 ctx.fillText('︶右半圆：阴气生长︵', cx, cy + R + 85);
 
@@ -274,40 +275,37 @@ hexagrams.forEach((h, i) => {
   const x = cx + R * Math.cos(angle);
   const y = cy + R * Math.sin(angle);
 
-  // Draw hexagram lines bars radiating outward
-  const innerR = R - 60;
-  const outerR = R + 60;
-  const lineSpacing = 12;
+  // Draw hexagram lines radiating from center outward
+  // j=0 is 初爻 (closest to center), j=5 is 上爻 (furthest out)
+  const lineGap = 14;
+  const baseR = R - 45;
+  const halfWidth = 16;
   
   for (let j = 0; j < 6; j++) {
-    const lineAngle = angle;
-    const offset = (j - 2.5) * lineSpacing;
-    const perpAngle = angle + Math.PI/2;
-    const lx = cx + R * Math.cos(lineAngle) + offset * Math.cos(perpAngle);
-    const ly = cy + R * Math.sin(lineAngle) + offset * Math.sin(perpAngle);
+    const lr = baseR + j * lineGap;
+    const lx = cx + lr * Math.cos(angle);
+    const ly = cy + lr * Math.sin(angle);
     
-    const dx = Math.cos(lineAngle);
-    const dy = Math.sin(lineAngle);
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
     
     if (h.lines[j] === 1) {
-      // Yang line
       ctx.beginPath();
-      ctx.strokeStyle = '#e8a030';
-      ctx.lineWidth = 3;
-      ctx.moveTo(lx - 18*dx, ly - 18*dy);
-      ctx.lineTo(lx + 18*dx, ly + 18*dy);
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 4;
+      ctx.moveTo(lx - halfWidth*px, ly - halfWidth*py);
+      ctx.lineTo(lx + halfWidth*px, ly + halfWidth*py);
       ctx.stroke();
     } else {
-      // Yin line (two short segments)
       ctx.beginPath();
-      ctx.strokeStyle = '#4080d0';
-      ctx.lineWidth = 3;
-      ctx.moveTo(lx - 18*dx, ly - 18*dy);
-      ctx.lineTo(lx - 5*dx, ly - 5*dy);
+      ctx.strokeStyle = '#999999';
+      ctx.lineWidth = 4;
+      ctx.moveTo(lx - halfWidth*px, ly - halfWidth*py);
+      ctx.lineTo(lx - 4*px, ly - 4*py);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(lx + 5*dx, ly + 5*dy);
-      ctx.lineTo(lx + 18*dx, ly + 18*dy);
+      ctx.moveTo(lx + 4*px, ly + 4*py);
+      ctx.lineTo(lx + halfWidth*px, ly + halfWidth*py);
       ctx.stroke();
     }
   }
@@ -317,45 +315,45 @@ hexagrams.forEach((h, i) => {
   const lx2 = cx + labelR * Math.cos(angle);
   const ly2 = cy + labelR * Math.sin(angle);
   
-  ctx.fillStyle = i < 6 ? '#e8a030' : '#4080d0';
-  if (h.name === '乾' || h.name === '坤') ctx.fillStyle = '#f0d060';
+  ctx.fillStyle = i < 6 ? '#d97706' : '#3b82f6';
+  if (h.name === '乾' || h.name === '坤') ctx.fillStyle = '#7c3aed';
   ctx.font = 'bold 22px "Noto Serif SC", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(h.branch, lx2, ly2);
 
-  // Hexagram name inside
-  const nameR = R - 90;
+  // Hexagram name inside (closer to center, before 初爻)
+  const nameR = R - 80;
   const nx = cx + nameR * Math.cos(angle);
   const ny = cy + nameR * Math.sin(angle);
-  ctx.fillStyle = '#f0d060';
-  ctx.font = '16px "Noto Serif SC", serif';
+  ctx.fillStyle = '#7c3aed';
+  ctx.font = '15px "Noto Serif SC", serif';
   ctx.fillText(h.name, nx, ny);
 
   // Solar terms even more inside
-  const termR = R - 120;
+  const termR = R - 100;
   const tx = cx + termR * Math.cos(angle);
   const ty = cy + termR * Math.sin(angle);
-  ctx.fillStyle = '#888';
-  ctx.font = '11px "Noto Serif SC", serif';
-  ctx.fillText(h.terms[0], tx, ty - 7);
-  ctx.fillText(h.terms[1], tx, ty + 7);
+  ctx.fillStyle = '#999999';
+  ctx.font = '10px "Noto Serif SC", serif';
+  ctx.fillText(h.terms[0], tx, ty - 6);
+  ctx.fillText(h.terms[1], tx, ty + 6);
 });
 
 // Center text
-ctx.fillStyle = '#f0d060';
+ctx.fillStyle = '#7c3aed';
 ctx.font = 'bold 24px "Noto Serif SC", serif';
 ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
 ctx.fillText('太极', cx, cy - 10);
-ctx.fillStyle = '#888';
+ctx.fillStyle = '#999999';
 ctx.font = '13px "Noto Serif SC", serif';
 ctx.fillText('阴阳消长', cx, cy + 15);
 ctx.fillText('周而复始', cx, cy + 33);
 
 // Draw dividing line (left=yang growth, right=yin growth)
 ctx.beginPath();
-ctx.strokeStyle = '#333';
+ctx.strokeStyle = '#e5e5e5';
 ctx.lineWidth = 1;
 ctx.setLineDash([4,4]);
 ctx.moveTo(cx, cy - R - 20);
