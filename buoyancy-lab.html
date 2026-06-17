@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浮力实验演示</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a1a;
+    color: #e0e0e0;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 900px;
+    width: 100%;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.6em;
+    color: #f0d060;
+    margin-bottom: 4px;
+    letter-spacing: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 0.85em;
+    margin-bottom: 20px;
+  }
+  .sim-area {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  button {
+    background: linear-gradient(135deg, #2d1b69, #7b5ea7);
+    color: #fff;
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+  }
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(168,85,247,0.3);
+    border-color: #a855f7;
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .phase-label {
+    text-align: center;
+    font-size: 1.1em;
+    color: #f0d060;
+    margin: 8px 0;
+    min-height: 1.4em;
+  }
+  .analysis {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .analysis h2 {
+    color: #f0d060;
+    font-size: 1.2em;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) {
+    .analysis-grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: rgba(45,27,105,0.3);
+    border: 1px solid rgba(168,85,247,0.15);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .card h3 {
+    color: #a855f7;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+  }
+  .card p {
+    font-size: 0.82em;
+    line-height: 1.7;
+    color: #ccc;
+  }
+  .highlight { color: #f0d060; font-weight: bold; }
+  .red { color: #e94560; }
+  .green { color: #50fa7b; }
+  .blue { color: #4080d0; }
+  .arrow-up { color: #50fa7b; }
+  .arrow-down { color: #e94560; }
+  .arrow-same { color: #f0d060; }
+  .formula {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 6px 0;
+    font-family: "Courier New", monospace;
+    font-size: 0.85em;
+    color: #f0d060;
+  }
+  .full-card {
+    grid-column: 1 / -1;
+  }
+  .state-compare {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .state-box {
+    flex: 1;
+    min-width: 180px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .state-box h4 { color: #a855f7; margin-bottom: 6px; font-size: 0.85em; }
+  .state-box .val { font-size: 1.1em; color: #f0d060; margin: 4px 0; }
+  .change-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    color: #f0d060;
+    padding: 0 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔬 浮力实验演示</h1>
+  <div class="subtitle">A、B用绳连接悬浮 → 剪断绳 → A漂浮 B沉底</div>
+
+  <div class="sim-area">
+    <canvas id="simCanvas" width="800" height="450"></canvas>
+    <div class="phase-label" id="phaseLabel">状态1：A、B用绳连接，整体在液体中悬浮</div>
+    <div class="controls">
+      <button id="btnCut" onclick="cutRope()">✂️ 剪断绳子</button>
+      <button id="btnReset" onclick="resetSim()" disabled>🔄 重置</button>
+    </div>
+  </div>
+
+  <div class="analysis" id="analysisPanel">
+    <h2>📊 物理分析</h2>
+    
+    <div class="analysis-grid" id="state1Analysis">
+      <div class="card">
+        <h3>🔵 A、B整体受力（状态1）</h3>
+        <p>整体悬浮：浮力 = 重力</p>
+        <div class="formula">F浮总 = G_A + G_B</div>
+        <p>即：<span class="blue">ρ液·g·(V_A+V_B) = ρ_A·g·V_A + ρ_B·g·V_B</span></p>
+      </div>
+      <div class="card">
+        <h3>📐 容器与桌面压强（状态1）</h3>
+        <p>液体深度 h₁，容器底面积 S</p>
+        <div class="formula">P容器底 = ρ液·g·h₁</div>
+        <div class="formula">P桌面 = (G容+G液+G_A+G_B) / S</div>
+      </div>
+    </div>
+
+    <div class="analysis-grid" id="state2Analysis" style="display:none">
+      <div class="card">
+        <h3>🟢 A漂浮的受力</h3>
+        <p>A漂浮 → ρ_A &lt; ρ液</p>
+        <div class="formula">F浮A = G_A（浮力=重力）</div>
+        <p>A部分露出液面，排开液体减少</p>
+      </div>
+      <div class="card">
+        <h3>🔴 B沉底的受力</h3>
+        <p>B沉底 → ρ_B &gt; ρ液</p>
+        <div class="formula">F浮B + N支 = G_B</div>
+        <p>容器底对B的支持力：</p>
+        <div class="formula">N支 = G_B - F浮B = (ρ_B - ρ液)·g·V_B</div>
+        <p>又因为整体浮力减少量等于A露出部分的浮力：</p>
+        <div class="formula">N支 = ρ液·g·V_A露出</div>
+        <p class="highlight">N支 = (ρ_B - ρ液)·g·V_B = ρ液·g·V_A露出</p>
+      </div>
+      <div class="card">
+        <h3>📏 液面与容器底压强变化</h3>
+        <p>V排₂ &lt; V排₁（A不再完全浸没）→ 液面下降</p>
+        <div class="formula">h₂ &lt; h₁</div>
+        <p class="arrow-down">▼ 液体压强变小</p>
+        <div class="formula">P容器底₂ = ρ液·g·h₂ &lt; ρ液·g·h₁</div>
+      </div>
+      <div class="card">
+        <h3>🖥️ 桌面压强变化</h3>
+        <p>所有东西仍在容器中，总重不变</p>
+        <div class="formula">G总 = G容+G液+G_A+G_B（不变）</div>
+        <p class="arrow-same">◆ 桌面压强不变</p>
+        <div class="formula">P桌面₂ = G总 / S = P桌面₁</div>
+      </div>
+      <div class="card full-card">
+        <h3>📋 压强变化总结</h3>
+        <div class="state-compare">
+          <div class="state-box">
+            <h4>物理量</h4>
+            <div class="val" style="font-size:0.85em; color:#aaa">—</div>
+          </div>
+          <div class="state-box">
+            <h4>状态1（悬浮）</h4>
+            <div class="val" style="font-size:0.85em; color:#aaa">—</div>
+          </div>
+          <div class="change-arrow">→</div>
+          <div class="state-box">
+            <h4>状态2（A浮B沉）</h4>
+            <div class="val" style="font-size:0.85em; color:#aaa">—</div>
+          </div>
+          <div class="state-box">
+            <h4>变化</h4>
+          </div>
+        </div>
+        <div class="state-compare" style="margin-top:8px">
+          <div class="state-box"><div class="val">容器底液体压强</div></div>
+          <div class="state-box"><div class="val">ρ液gh₁</div></div>
+          <div class="change-arrow">→</div>
+          <div class="state-box"><div class="val">ρ液gh₂</div></div>
+          <div class="state-box"><span class="red">▼ 变小</span></div>
+        </div>
+        <div class="state-compare" style="margin-top:8px">
+          <div class="state-box"><div class="val">桌面压强</div></div>
+          <div class="state-box"><div class="val">G总/S</div></div>
+          <div class="change-arrow">→</div>
+          <div class="state-box"><div class="val">G总/S</div></div>
+          <div class="state-box"><span class="highlight">◆ 不变</span></div>
+        </div>
+        <div class="state-compare" style="margin-top:8px">
+          <div class="state-box"><div class="val">B受支持力</div></div>
+          <div class="state-box"><div class="val">0</div></div>
+          <div class="change-arrow">→</div>
+          <div class="state-box"><div class="val">(ρ_B-ρ液)gV_B</div></div>
+          <div class="state-box"><span class="green">▲ 从0变正</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+// Physics state
+let state = 1; // 1 = suspended, 2 = animating, 3 = settled
+let animProgress = 0;
+let animSpeed = 0.012;
+
+// Container dimensions
+const cx = 400, cy = 225;
+const containerW = 280, containerH = 320;
+const containerL = cx - containerW/2, containerR = cx + containerW/2;
+const containerT = cy - containerH/2 + 20, containerB = cy + containerH/2 + 20;
+
+// Liquid
+const liquidTop1 = containerT + 40; // state1 liquid top
+let liquidTop2 = containerT + 58; // state2 liquid top (lower because A partially out)
+let currentLiquidTop = liquidTop1;
+
+// Objects
+const objW = 60, objH = 50;
+const aObj = { x: cx, y: containerT + 130, w: objW, h: objH, color: '#e8a030', label: 'A' };
+const bObj = { x: cx, y: containerT + 210, w: objW, h: objH, color: '#4080d0', label: 'B' };
+
+// Target positions
+const aFloat = { y: containerT + 38 }; // A floating (partially above liquid)
+const bSink = { y: containerB - objH/2 - 2 }; // B sitting on container bottom
+
+// Rope
+let ropeVisible = true;
+let ropeCutAnim = 0;
+
+// Bubbles
+let bubbles = [];
+
+function drawContainer() {
+  // Container walls
+  ctx.strokeStyle = '#556';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(containerL, containerT);
+  ctx.lineTo(containerL, containerB);
+  ctx.lineTo(containerR, containerB);
+  ctx.lineTo(containerR, containerT);
+  ctx.stroke();
+  
+  // Container rim
+  ctx.strokeStyle = '#778';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(containerL - 5, containerT);
+  ctx.lineTo(containerL, containerT);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(containerR, containerT);
+  ctx.lineTo(containerR + 5, containerT);
+  ctx.stroke();
+  
+  // Desktop
+  ctx.fillStyle = '#333';
+  ctx.fillRect(containerL - 40, containerB + 2, containerW + 80, 8);
+  ctx.fillStyle = '#555';
+  ctx.font = '12px "Noto Sans SC"';
+  ctx.textAlign = 'center';
+  ctx.fillText('桌面', cx, containerB + 24);
+}
+
+function drawLiquid(top) {
+  ctx.save();
+  // Clip to container
+  ctx.beginPath();
+  ctx.rect(containerL + 2, top, containerW - 4, containerB - top - 2);
+  ctx.clip();
+  
+  // Liquid body
+  const gradient = ctx.createLinearGradient(0, top, 0, containerB);
+  gradient.addColorStop(0, 'rgba(64, 128, 208, 0.45)');
+  gradient.addColorStop(1, 'rgba(30, 80, 160, 0.65)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(containerL + 2, top, containerW - 4, containerB - top - 2);
+  
+  // Liquid surface wave
+  ctx.strokeStyle = 'rgba(120, 180, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const t = Date.now() / 1000;
+  for (let x = containerL + 2; x < containerR - 2; x += 2) {
+    const wave = Math.sin(x * 0.03 + t * 2) * 2 + Math.sin(x * 0.07 + t * 3) * 1;
+    if (x === containerL + 2) ctx.moveTo(x, top + wave);
+    else ctx.lineTo(x, top + wave);
+  }
+  ctx.stroke();
+  
+  ctx.restore();
+  
+  // Liquid level label
+  ctx.fillStyle = '#6af';
+  ctx.font = '11px "Noto Sans SC"';
+  ctx.textAlign = 'left';
+  const hLabel = state >= 3 ? 'h₂' : 'h₁';
+  ctx.fillText(hLabel, containerR + 8, top + 4);
+  
+  // Height arrow
+  ctx.strokeStyle = '#6af';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(containerR + 5, top);
+  ctx.lineTo(containerR + 5, containerB);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Arrow heads
+  drawArrowHead(containerR + 5, top, 'up', '#6af');
+  drawArrowHead(containerR + 5, containerB, 'down', '#6af');
+}
+
+function drawArrowHead(x, y, dir, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  if (dir === 'up') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 4, y + 8);
+    ctx.lineTo(x + 4, y + 8);
+  } else {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 4, y - 8);
+    ctx.lineTo(x + 4, y - 8);
+  }
+  ctx.fill();
+}
+
+function drawObject(obj, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(obj.x - obj.w/2 + 3, obj.y - obj.h/2 + 3, obj.w, obj.h);
+  
+  // Body
+  const gradient = ctx.createLinearGradient(obj.x - obj.w/2, obj.y, obj.x + obj.w/2, obj.y);
+  gradient.addColorStop(0, obj.color);
+  gradient.addColorStop(1, shadeColor(obj.color, -30));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(obj.x - obj.w/2, obj.y - obj.h/2, obj.w, obj.h);
+  
+  // Border
+  ctx.strokeStyle = shadeColor(obj.color, -50);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(obj.x - obj.w/2, obj.y - obj.h/2, obj.w, obj.h);
+  
+  // Label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px "Noto Sans SC"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(obj.label, obj.x, obj.y);
+  
+  // Density label
+  ctx.font = '10px "Noto Sans SC"';
+  ctx.fillStyle = '#ddd';
+  if (obj.label === 'A') {
+    ctx.fillText('ρ_A < ρ液', obj.x, obj.y + 14);
+  } else {
+    ctx.fillText('ρ_B > ρ液', obj.x, obj.y + 14);
+  }
+  
+  ctx.restore();
+}
+
+function shadeColor(color, percent) {
+  const num = parseInt(color.replace('#', ''), 16);
+  const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+  const b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawRope(y1, y2) {
+  if (!ropeVisible) return;
+  
+  const x = cx;
+  ctx.strokeStyle = ropeCutAnim > 0 ? 
+    `rgba(200, 180, 120, ${1 - ropeCutAnim})` : '#c8b478';
+  ctx.lineWidth = 2;
+  ctx.setLineDash(ropeCutAnim > 0 ? [4, 4] : []);
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Scissors icon when cutting
+  if (ropeCutAnim > 0 && ropeCutAnim < 1) {
+    ctx.font = '24px serif';
+    ctx.fillText('✂️', x + 15, (y1 + y2) / 2 - ropeCutAnim * 30);
+  }
+}
+
+function drawForces() {
+  if (state < 3) return;
+  
+  // Forces on B
+  const bx = bObj.x + objW/2 + 15;
+  const by = bObj.y;
+  
+  // Gravity (down) - larger arrow since ρ_B > ρ液
+  drawForceArrow(bx, by - 5, by + 45, '#e94560', 'G_B');
+  
+  // Buoyancy (up) - shorter arrow
+  drawForceArrow(bx + 22, by - 5, by - 28, '#50fa7b', 'F浮B');
+  
+  // Support force from container bottom (up)
+  drawForceArrow(bx + 44, by + objH/2, by - 15, '#f0d060', 'N支');
+  
+  // N支 = ρ液gV_A露出 annotation
+  ctx.fillStyle = '#f0d060';
+  ctx.font = '10px "Noto Sans SC"';
+  ctx.textAlign = 'left';
+  ctx.fillText('= ρ液gV_A露出', bx + 54, by - 8);
+  
+  // Forces on A
+  const ax = aObj.x + objW/2 + 15;
+  const ay = aObj.y;
+  
+  // Gravity (down)
+  drawForceArrow(ax, ay, ay + 25, '#e94560', 'G_A');
+  
+  // Buoyancy (up)
+  drawForceArrow(ax + 20, ay, ay - 25, '#50fa7b', 'F浮A');
+}
+
+function drawForceArrow(x, y1, y2, color, label) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+  
+  // Arrow head
+  const dir = y2 < y1 ? -1 : 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y2);
+  ctx.lineTo(x - 5, y2 + dir * 8);
+  ctx.lineTo(x + 5, y2 + dir * 8);
+  ctx.fill();
+  
+  // Label
+  ctx.font = '10px "Noto Sans SC"';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x + 6, (y1 + y2) / 2 + 4);
+}
+
+function addBubbles(x, y, count) {
+  for (let i = 0; i < count; i++) {
+    bubbles.push({
+      x: x + (Math.random() - 0.5) * 30,
+      y: y,
+      r: Math.random() * 3 + 1,
+      speed: Math.random() * 1.5 + 0.5,
+      alpha: 0.6 + Math.random() * 0.4
+    });
+  }
+}
+
+function updateBubbles() {
+  bubbles = bubbles.filter(b => b.y > currentLiquidTop);
+  bubbles.forEach(b => {
+    b.y -= b.speed;
+    b.x += Math.sin(Date.now() / 300 + b.x) * 0.3;
+    b.alpha -= 0.003;
+  });
+}
+
+function drawBubbles() {
+  bubbles.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(150, 200, 255, ${b.alpha})`;
+    ctx.fill();
+  });
+}
+
+// Labels
+function drawLabels() {
+  ctx.fillStyle = '#888';
+  ctx.font = '11px "Noto Sans SC"';
+  ctx.textAlign = 'left';
+  
+  if (state === 1) {
+    ctx.fillText('① A、B用绳连接', containerL, containerT - 25);
+    ctx.fillText('② 整体悬浮', containerL, containerT - 10);
+  } else if (state === 2) {
+    ctx.fillStyle = '#e94560';
+    ctx.fillText('绳断！A上浮 B下沉...', containerL, containerT - 15);
+  } else {
+    ctx.fillStyle = '#50fa7b';
+    ctx.fillText('A漂浮（ρ_A < ρ液）', containerL, containerT - 25);
+    ctx.fillText('B沉底（ρ_B > ρ液）', containerL, containerT - 10);
+  }
+}
+
+// Main render
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Background
+  ctx.fillStyle = '#0d0d20';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  drawContainer();
+  drawLiquid(currentLiquidTop);
+  drawBubbles();
+  
+  // Objects
+  drawObject(aObj);
+  drawObject(bObj);
+  
+  // Rope
+  if (state === 1) {
+    drawRope(aObj.y + objH/2, bObj.y - objH/2);
+  } else if (state === 2 && ropeCutAnim < 1) {
+    ropeCutAnim += 0.03;
+    if (ropeCutAnim >= 1) ropeVisible = false;
+  }
+  
+  // Forces
+  drawForces();
+  
+  // Labels
+  drawLabels();
+  
+  // Animation
+  if (state === 2) {
+    animProgress += animSpeed;
+    
+    // Ease functions
+    const easeA = easeOutCubic(Math.min(animProgress * 1.2, 1));
+    const easeB = easeOutCubic(Math.min(animProgress * 1.0, 1));
+    const easeLiq = easeInOutCubic(Math.min(animProgress * 0.8, 1));
+    
+    // A moves up
+    aObj.y = lerp(containerT + 130, aFloat.y, easeA);
+    
+    // B moves down
+    bObj.y = lerp(containerT + 210, bSink.y, easeB);
+    
+    // Liquid level drops
+    currentLiquidTop = lerp(liquidTop1, liquidTop2, easeLiq);
+    
+    // Bubbles
+    if (animProgress < 0.5 && Math.random() < 0.3) {
+      addBubbles(aObj.x, aObj.y + objH/2, 2);
+      addBubbles(bObj.x, bObj.y - objH/2, 1);
+    }
+    
+    if (animProgress >= 1) {
+      state = 3;
+      document.getElementById('phaseLabel').textContent = '状态2：A漂浮，B沉底（点击"重置"可重新演示）';
+      document.getElementById('state2Analysis').style.display = 'grid';
+      document.getElementById('btnReset').disabled = false;
+    }
+  }
+  
+  updateBubbles();
+  requestAnimationFrame(render);
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+
+function cutRope() {
+  if (state !== 1) return;
+  state = 2;
+  animProgress = 0;
+  document.getElementById('btnCut').disabled = true;
+  document.getElementById('phaseLabel').textContent = '✂️ 绳子被剪断！A上浮，B下沉...';
+}
+
+function resetSim() {
+  state = 1;
+  animProgress = 0;
+  ropeVisible = true;
+  ropeCutAnim = 0;
+  aObj.y = containerT + 130;
+  bObj.y = containerT + 210;
+  currentLiquidTop = liquidTop1;
+  bubbles = [];
+  document.getElementById('btnCut').disabled = false;
+  document.getElementById('btnReset').disabled = true;
+  document.getElementById('phaseLabel').textContent = '状态1：A、B用绳连接，整体在液体中悬浮';
+  document.getElementById('state2Analysis').style.display = 'none';
+}
+
+// Start
+render();
+</script>
+</body>
+</html>

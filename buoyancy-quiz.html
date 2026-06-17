@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浮力实验·随堂测试</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a1a;
+    color: #e0e0e0;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; width: 100%; }
+  h1 { text-align: center; font-size: 1.6em; color: #f0d060; margin-bottom: 4px; letter-spacing: 4px; }
+  .subtitle { text-align: center; color: #888; font-size: 0.85em; margin-bottom: 16px; }
+  .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+  .sim-panel, .quiz-panel {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .panel-title { color: #f0d060; font-size: 1em; margin-bottom: 10px; text-align: center; letter-spacing: 2px; }
+  canvas { display: block; margin: 0 auto; border-radius: 8px; }
+  .controls { display: flex; justify-content: center; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+  button {
+    background: linear-gradient(135deg, #2d1b69, #7b5ea7);
+    color: #fff; border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 10px; padding: 8px 20px; font-size: 0.9em;
+    cursor: pointer; transition: all 0.3s; font-family: inherit;
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(168,85,247,0.3); border-color: #a855f7; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .phase-label { text-align: center; font-size: 0.9em; color: #f0d060; margin: 6px 0; min-height: 1.4em; }
+
+  /* Quiz styles */
+  .quiz-section { margin-bottom: 14px; }
+  .quiz-q {
+    background: rgba(45,27,105,0.3); border: 1px solid rgba(168,85,247,0.15);
+    border-radius: 10px; padding: 12px; margin-bottom: 8px;
+  }
+  .quiz-q.correct { border-color: #50fa7b; background: rgba(80,250,123,0.08); }
+  .quiz-q.wrong { border-color: #e94560; background: rgba(233,69,96,0.08); }
+  .q-text { font-size: 0.88em; line-height: 1.6; margin-bottom: 8px; }
+  .q-num { color: #a855f7; font-weight: bold; }
+  .options { display: flex; flex-direction: column; gap: 6px; }
+  .opt-btn {
+    background: rgba(0,0,0,0.25); border: 1px solid #333;
+    border-radius: 8px; padding: 8px 12px; font-size: 0.84em;
+    cursor: pointer; transition: all 0.2s; text-align: left; color: #ccc;
+    font-family: inherit;
+  }
+  .opt-btn:hover { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+  .opt-btn.selected { border-color: #a855f7; background: rgba(168,85,247,0.15); color: #fff; }
+  .opt-btn.correct-answer { border-color: #50fa7b; background: rgba(80,250,123,0.15); color: #50fa7b; }
+  .opt-btn.wrong-answer { border-color: #e94560; background: rgba(233,69,96,0.15); color: #e94560; }
+  .opt-btn:disabled { cursor: default; }
+  .explanation {
+    margin-top: 8px; font-size: 0.82em; line-height: 1.6;
+    padding: 8px 10px; border-radius: 6px; display: none;
+  }
+  .explanation.show { display: block; }
+  .explanation.correct-exp { background: rgba(80,250,123,0.1); color: #50fa7b; }
+  .explanation.wrong-exp { background: rgba(233,69,96,0.1); color: #e94560; }
+  .formula { background: rgba(0,0,0,0.3); border-radius: 6px; padding: 4px 8px; margin: 4px 0; font-family: "Courier New", monospace; font-size: 0.85em; color: #f0d060; }
+
+  .score-bar {
+    text-align: center; padding: 10px; border-radius: 10px;
+    background: rgba(0,0,0,0.3); margin-top: 10px; display: none;
+  }
+  .score-bar.show { display: block; }
+  .score-num { font-size: 2em; font-weight: bold; }
+  .score-perfect { color: #50fa7b; }
+  .score-good { color: #f0d060; }
+  .score-bad { color: #e94560; }
+  .score-msg { font-size: 0.85em; color: #aaa; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔬 浮力实验 · 随堂测试</h1>
+  <div class="subtitle">先操作动画，再做题，答案即时揭晓</div>
+
+  <div class="main-layout">
+    <!-- Left: Animation -->
+    <div class="sim-panel">
+      <div class="panel-title">🎬 实验动画</div>
+      <canvas id="simCanvas" width="500" height="380"></canvas>
+      <div class="phase-label" id="phaseLabel">状态1：A、B用绳连接悬浮</div>
+      <div class="controls">
+        <button id="btnCut" onclick="cutRope()">✂️ 剪断绳子</button>
+        <button id="btnReset" onclick="resetSim()" disabled>🔄 重置</button>
+      </div>
+    </div>
+
+    <!-- Right: Quiz -->
+    <div class="quiz-panel">
+      <div class="panel-title">📝 随堂测试</div>
+      <div id="quizContainer"></div>
+      <div class="score-bar" id="scoreBar">
+        <div class="score-num" id="scoreNum"></div>
+        <div class="score-msg" id="scoreMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== QUIZ DATA =====
+const questions = [
+  {
+    id: 1,
+    text: '剪断绳子后，A漂浮、B沉底。A的密度与液体密度的关系是？',
+    options: ['ρ_A > ρ液', 'ρ_A = ρ液', 'ρ_A < ρ液', '无法判断'],
+    correct: 2,
+    explanation: 'A漂浮 → 浮力=重力 → ρ液·g·V_A排 = ρ_A·g·V_A → V_A排 < V_A → ρ_A < ρ液'
+  },
+  {
+    id: 2,
+    text: '剪断绳子后，B受到容器底的支持力N等于？',
+    options: ['G_B', 'G_B - F浮B', 'F浮B - G_B', 'G_B + F浮B'],
+    correct: 1,
+    explanation: 'B沉底静止：F浮B + N = G_B → N = G_B - F浮B = (ρ_B - ρ液)·g·V_B'
+  },
+  {
+    id: 3,
+    text: 'B受到的支持力N，还可以等价表示为？',
+    options: ['ρ液·g·V_B', 'ρ液·g·V_A', 'ρ液·g·V_A露出', 'ρ_B·g·V_A露出'],
+    correct: 2,
+    explanation: '状态1整体悬浮：ρ液g(V_A+V_B) = G_A+G_B\n状态2：F浮A+F浮B+N = G_A+G_B\n相减得：N = ρ液g(V_A+V_B) - F浮A - F浮B = ρ液g(V_A - V_A排) = ρ液gV_A露出'
+  },
+  {
+    id: 4,
+    text: '剪断绳子后，液面高度如何变化？',
+    options: ['上升', '下降', '不变', '先升后降'],
+    correct: 1,
+    explanation: 'A从完全浸没变为部分露出，总排开液体体积V排变小 → 液面下降'
+  },
+  {
+    id: 5,
+    text: '剪断绳子后，容器底部受到的液体压强如何变化？',
+    options: ['变大', '变小', '不变', '无法判断'],
+    correct: 1,
+    explanation: 'P = ρgh，液面下降 → h变小 → 液体压强变小'
+  },
+  {
+    id: 6,
+    text: '剪断绳子后，桌面受到的压强如何变化？',
+    options: ['变大', '变小', '不变', '无法判断'],
+    correct: 2,
+    explanation: '桌面压强 = (G容+G液+G_A+G_B)/S，所有东西还在容器里，总重不变，接触面积不变 → 桌面压强不变'
+  },
+  {
+    id: 7,
+    text: '剪断绳子前后，A受到的浮力如何变化？',
+    options: ['变大', '变小', '不变', '先大后小'],
+    correct: 1,
+    explanation: '状态1：A完全浸没，F浮A = ρ液·g·V_A\n状态2：A漂浮，F浮A = G_A = ρ_A·g·V_A\n因为 ρ_A < ρ液，所以 ρ_A·g·V_A < ρ液·g·V_A → A受到的浮力变小'
+  },
+  {
+    id: 8,
+    text: '剪断绳子前后，液体对容器底的总压力如何变化？',
+    options: ['变大', '变小', '不变', '无法判断'],
+    correct: 1,
+    explanation: '液体对容器底的总压力 = P·S = ρgh·S\nh变小 → 总压力变小\n也可以这样理解：B沉底后，B对容器底有直接压力，液体不需要"托住"B了，所以液体对底面的压力减少'
+  }
+];
+
+let answeredCount = 0;
+
+function renderQuiz() {
+  const container = document.getElementById('quizContainer');
+  let html = '';
+  questions.forEach((q, i) => {
+    html += `<div class="quiz-section" id="q${q.id}">
+      <div class="quiz-q" id="qbox${q.id}">
+        <div class="q-text"><span class="q-num">第${q.id}题</span> ${q.text}</div>
+        <div class="options" id="opts${q.id}">
+          ${q.options.map((opt, oi) => `<button class="opt-btn" id="opt${q.id}_${oi}" onclick="selectAnswer(${q.id}, ${oi})">${['A','B','C','D'][oi]}. ${opt}</button>`).join('')}
+        </div>
+        <div class="explanation" id="exp${q.id}"></div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function selectAnswer(qId, optIdx) {
+  const q = questions.find(q => q.id === qId);
+  const qbox = document.getElementById(`qbox${qId}`);
+  const exp = document.getElementById(`exp${qId}`);
+  
+  // Already answered
+  if (qbox.classList.contains('correct') || qbox.classList.contains('wrong')) return;
+  
+  answeredCount++;
+  
+  // Disable all options
+  q.options.forEach((_, oi) => {
+    document.getElementById(`opt${qId}_${oi}`).disabled = true;
+  });
+  
+  const isCorrect = optIdx === q.correct;
+  
+  // Mark selected
+  if (isCorrect) {
+    document.getElementById(`opt${qId}_${optIdx}`).classList.add('correct-answer');
+    qbox.classList.add('correct');
+    exp.classList.add('correct-exp', 'show');
+    exp.innerHTML = '✅ 正确！' + q.explanation.replace(/\n/g, '<br>');
+  } else {
+    document.getElementById(`opt${qId}_${optIdx}`).classList.add('wrong-answer');
+    document.getElementById(`opt${qId}_${q.correct}`).classList.add('correct-answer');
+    qbox.classList.add('wrong');
+    exp.classList.add('wrong-exp', 'show');
+    exp.innerHTML = '❌ 错误。' + q.explanation.replace(/\n/g, '<br>');
+  }
+  
+  // Show score when all answered
+  if (answeredCount === questions.length) {
+    showScore();
+  }
+}
+
+function showScore() {
+  const correctCount = document.querySelectorAll('.quiz-q.correct').length;
+  const total = questions.length;
+  const pct = Math.round(correctCount / total * 100);
+  
+  const bar = document.getElementById('scoreBar');
+  const num = document.getElementById('scoreNum');
+  const msg = document.getElementById('scoreMsg');
+  
+  num.textContent = `${correctCount} / ${total}`;
+  num.className = 'score-num ' + (pct >= 80 ? 'score-perfect' : pct >= 50 ? 'score-good' : 'score-bad');
+  
+  const messages = {
+    100: '满分！浮力完全掌握了 🎉',
+    80: '很好！基本掌握了，个别细节再看看 👍',
+    50: '还行，需要再巩固一下基础 📖',
+    0: '需要重新学习这一节哦 💪'
+  };
+  const threshold = pct === 100 ? 100 : pct >= 80 ? 80 : pct >= 50 ? 50 : 0;
+  msg.textContent = messages[threshold];
+  
+  bar.classList.add('show');
+}
+
+renderQuiz();
+
+// ===== ANIMATION (same as buoyancy-lab.html) =====
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+let state = 1;
+let animProgress = 0;
+let animSpeed = 0.012;
+
+const cx = 250, cy = 190;
+const containerW = 200, containerH = 280;
+const containerL = cx - containerW/2, containerR = cx + containerW/2;
+const containerT = cy - containerH/2 + 15, containerB = cy + containerH/2 + 15;
+
+const liquidTop1 = containerT + 35;
+let liquidTop2 = containerT + 52;
+let currentLiquidTop = liquidTop1;
+
+const objW = 48, objH = 40;
+const aObj = { x: cx, y: containerT + 115, w: objW, h: objH, color: '#e8a030', label: 'A' };
+const bObj = { x: cx, y: containerT + 180, w: objW, h: objH, color: '#4080d0', label: 'B' };
+
+const aFloat = { y: containerT + 32 };
+const bSink = { y: containerB - objH/2 - 2 };
+
+let ropeVisible = true;
+let ropeCutAnim = 0;
+let bubbles = [];
+
+function drawContainer() {
+  ctx.strokeStyle = '#556'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(containerL, containerT); ctx.lineTo(containerL, containerB);
+  ctx.lineTo(containerR, containerB); ctx.lineTo(containerR, containerT);
+  ctx.stroke();
+  ctx.strokeStyle = '#778'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(containerL-5, containerT); ctx.lineTo(containerL, containerT); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(containerR, containerT); ctx.lineTo(containerR+5, containerT); ctx.stroke();
+  ctx.fillStyle = '#333'; ctx.fillRect(containerL-30, containerB+2, containerW+60, 6);
+  ctx.fillStyle = '#555'; ctx.font = '11px "Noto Sans SC"'; ctx.textAlign = 'center';
+  ctx.fillText('桌面', cx, containerB+18);
+}
+
+function drawLiquid(top) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(containerL+2, top, containerW-4, containerB-top-2);
+  ctx.clip();
+  const gradient = ctx.createLinearGradient(0, top, 0, containerB);
+  gradient.addColorStop(0, 'rgba(64,128,208,0.45)');
+  gradient.addColorStop(1, 'rgba(30,80,160,0.65)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(containerL+2, top, containerW-4, containerB-top-2);
+  ctx.strokeStyle = 'rgba(120,180,255,0.6)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  const t = Date.now()/1000;
+  for (let x=containerL+2; x<containerR-2; x+=2) {
+    const wave = Math.sin(x*0.03+t*2)*2 + Math.sin(x*0.07+t*3)*1;
+    if (x===containerL+2) ctx.moveTo(x, top+wave); else ctx.lineTo(x, top+wave);
+  }
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#6af'; ctx.font = '10px "Noto Sans SC"'; ctx.textAlign = 'left';
+  ctx.fillText(state>=3?'h₂':'h₁', containerR+6, top+3);
+  ctx.strokeStyle = '#6af'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(containerR+4, top); ctx.lineTo(containerR+4, containerB); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawObject(obj) {
+  const gradient = ctx.createLinearGradient(obj.x-obj.w/2, obj.y, obj.x+obj.w/2, obj.y);
+  gradient.addColorStop(0, obj.color);
+  gradient.addColorStop(1, shadeColor(obj.color, -30));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(obj.x-obj.w/2, obj.y-obj.h/2, obj.w, obj.h);
+  ctx.strokeStyle = shadeColor(obj.color, -50); ctx.lineWidth = 2;
+  ctx.strokeRect(obj.x-obj.w/2, obj.y-obj.h/2, obj.w, obj.h);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px "Noto Sans SC"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(obj.label, obj.x, obj.y-2);
+  ctx.font = '9px "Noto Sans SC"'; ctx.fillStyle = '#ddd';
+  ctx.fillText(obj.label==='A'?'ρ<ρ液':'ρ>ρ液', obj.x, obj.y+12);
+}
+
+function shadeColor(c,p){const n=parseInt(c.replace('#',''),16);return`rgb(${Math.min(255,Math.max(0,(n>>16)+p))},${Math.min(255,Math.max(0,((n>>8)&0xFF)+p))},${Math.min(255,Math.max(0,(n&0xFF)+p))})`;}
+
+function drawRope(y1,y2) {
+  if (!ropeVisible) return;
+  ctx.strokeStyle = ropeCutAnim>0?`rgba(200,180,120,${1-ropeCutAnim})`:'#c8b478';
+  ctx.lineWidth = 2; ctx.setLineDash(ropeCutAnim>0?[4,4]:[]);
+  ctx.beginPath(); ctx.moveTo(cx, y1); ctx.lineTo(cx, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  if (ropeCutAnim>0 && ropeCutAnim<1) {
+    ctx.font='20px serif'; ctx.fillText('✂️',cx+12,(y1+y2)/2-ropeCutAnim*25);
+  }
+}
+
+function drawForces() {
+  if (state < 3) return;
+  // B forces
+  const bx=bObj.x+objW/2+12, by=bObj.y;
+  drawForceArrow(bx,by-4,by+38,'#e94560','G_B');
+  drawForceArrow(bx+18,by-4,by-22,'#50fa7b','F浮B');
+  drawForceArrow(bx+36,by+objH/2,by-12,'#f0d060','N支');
+  ctx.fillStyle='#f0d060'; ctx.font='9px "Noto Sans SC"'; ctx.textAlign='left';
+  ctx.fillText('=ρ液gV_A露出',bx+46,by-6);
+  // A forces
+  const ax=aObj.x+objW/2+12, ay=aObj.y;
+  drawForceArrow(ax,ay,ay+22,'#e94560','G_A');
+  drawForceArrow(ax+18,ay,ay-22,'#50fa7b','F浮A');
+}
+
+function drawForceArrow(x,y1,y2,color,label) {
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,y1); ctx.lineTo(x,y2); ctx.stroke();
+  const dir=y2<y1?-1:1;
+  ctx.beginPath(); ctx.moveTo(x,y2); ctx.lineTo(x-4,y2+dir*7); ctx.lineTo(x+4,y2+dir*7); ctx.fill();
+  ctx.font='9px "Noto Sans SC"'; ctx.textAlign='left';
+  ctx.fillText(label,x+5,(y1+y2)/2+3);
+}
+
+function drawLabels() {
+  ctx.fillStyle='#888'; ctx.font='10px "Noto Sans SC"'; ctx.textAlign='left';
+  if (state===1) { ctx.fillText('A、B绳连，整体悬浮',containerL,containerT-20); }
+  else if (state===2) { ctx.fillStyle='#e94560'; ctx.fillText('绳断！A↑ B↓',containerL,containerT-12); }
+  else { ctx.fillStyle='#50fa7b'; ctx.fillText('A漂浮 B沉底',containerL,containerT-12); }
+}
+
+function render() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#0d0d20'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  drawContainer();
+  drawLiquid(currentLiquidTop);
+  bubbles.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=`rgba(150,200,255,${b.alpha})`;ctx.fill();});
+  drawObject(aObj); drawObject(bObj);
+  if (state===1) drawRope(aObj.y+objH/2,bObj.y-objH/2);
+  else if (state===2&&ropeCutAnim<1){ropeCutAnim+=0.03;if(ropeCutAnim>=1)ropeVisible=false;}
+  drawForces(); drawLabels();
+  if (state===2) {
+    animProgress+=animSpeed;
+    const eA=easeOC(Math.min(animProgress*1.2,1)),eB=easeOC(Math.min(animProgress*1,1)),eL=easeIOC(Math.min(animProgress*0.8,1));
+    aObj.y=lerp(containerT+115,aFloat.y,eA); bObj.y=lerp(containerT+180,bSink.y,eB); currentLiquidTop=lerp(liquidTop1,liquidTop2,eL);
+    if(animProgress<0.5&&Math.random()<0.3){bubbles.push({x:aObj.x+(Math.random()-0.5)*20,y:aObj.y+objH/2,r:Math.random()*2+1,speed:Math.random()*1+0.5,alpha:0.5+Math.random()*0.3});bubbles.push({x:bObj.x+(Math.random()-0.5)*20,y:bObj.y-objH/2,r:Math.random()*2+1,speed:Math.random()*1+0.5,alpha:0.5+Math.random()*0.3});}
+    if(animProgress>=1){state=3;document.getElementById('phaseLabel').textContent='状态2：A漂浮，B沉底';document.getElementById('btnReset').disabled=false;}
+  }
+  bubbles=bubbles.filter(b=>b.y>currentLiquidTop);bubbles.forEach(b=>{b.y-=b.speed;b.x+=Math.sin(Date.now()/300+b.x)*0.3;b.alpha-=0.005;});
+  requestAnimationFrame(render);
+}
+
+function lerp(a,b,t){return a+(b-a)*t;}
+function easeOC(t){return 1-Math.pow(1-t,3);}
+function easeIOC(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+
+function cutRope(){if(state!==1)return;state=2;animProgress=0;document.getElementById('btnCut').disabled=true;document.getElementById('phaseLabel').textContent='✂️ 绳断！A上浮，B下沉...';}
+function resetSim(){state=1;animProgress=0;ropeVisible=true;ropeCutAnim=0;aObj.y=containerT+115;bObj.y=containerT+180;currentLiquidTop=liquidTop1;bubbles=[];document.getElementById('btnCut').disabled=false;document.getElementById('btnReset').disabled=true;document.getElementById('phaseLabel').textContent='状态1：A、B用绳连接悬浮';}
+
+render();
+</script>
+</body>
+</html>

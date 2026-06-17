@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>十二月卦图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a1a;
+    color: #e0e0e0;
+    font-family: "Noto Serif SC", "SimSun", serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    max-width: 900px;
+    width: 100%;
+  }
+  h1 {
+    text-align: center;
+    font-size: 2em;
+    color: #f0d060;
+    margin-bottom: 8px;
+    letter-spacing: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #a0a0a0;
+    font-size: 0.9em;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+  }
+  .hexagram-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+  .hex-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hex-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(240, 208, 96, 0.15);
+    border-color: #f0d060;
+  }
+  .hex-card.yang-month {
+    border-left: 3px solid #e8a030;
+  }
+  .hex-card.yin-month {
+    border-left: 3px solid #4080d0;
+  }
+  .hex-card.peak {
+    border-left: 3px solid #f0d060;
+    box-shadow: 0 0 20px rgba(240, 208, 96, 0.1);
+  }
+  .month-label {
+    font-size: 0.75em;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .branch {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+  .yang-month .branch { color: #e8a030; }
+  .yin-month .branch { color: #4080d0; }
+  .peak .branch { color: #f0d060; }
+  .hex-name {
+    font-size: 1.3em;
+    color: #f0d060;
+    margin: 6px 0 10px;
+    letter-spacing: 4px;
+  }
+  .lines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 10px 0;
+    height: 90px;
+    justify-content: center;
+  }
+  .line {
+    height: 6px;
+    border-radius: 2px;
+  }
+  .line.yang {
+    background: #e8a030;
+    width: 60px;
+  }
+  .line.yin {
+    background: #4080d0;
+    width: 24px;
+  }
+  .line-pair {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .solar-terms {
+    font-size: 0.78em;
+    color: #aaa;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .solar-terms span {
+    display: inline-block;
+    background: #1a1a3a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin: 2px;
+  }
+  .meaning {
+    font-size: 0.72em;
+    color: #888;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .yang-count {
+    font-size: 0.7em;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  /* Circular diagram */
+  .circular-section {
+    margin-top: 30px;
+    text-align: center;
+  }
+  .circular-section h2 {
+    color: #f0d060;
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    letter-spacing: 4px;
+  }
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px 0;
+    font-size: 0.85em;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-color {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
+  }
+  .legend-color.yang-c { background: #e8a030; }
+  .legend-color.yin-c { background: #4080d0; }
+
+  .footer {
+    text-align: center;
+    color: #555;
+    font-size: 0.75em;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>十二月消息卦</h1>
+  <div class="subtitle">十二辟卦 · 阴阳消长 · 周而复始</div>
+  
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color yang-c"></div>阳爻（刚）</div>
+    <div class="legend-item"><div class="legend-color yin-c"></div>阴爻（柔）</div>
+  </div>
+
+  <div class="hexagram-grid" id="grid"></div>
+
+  <div class="circular-section">
+    <h2>阴阳消长圆图</h2>
+    <canvas id="circularCanvas" width="700" height="700"></canvas>
+  </div>
+
+  <div class="footer">紫虾仙子 🌹 · 周易六十四卦精讲</div>
+</div>
+
+<script>
+const hexagrams = [
+  { month: '十一月', branch: '子', name: '复', lines: [1,0,0,0,0,0], terms: ['大雪','冬至'], meaning: '一阳来复', note: '冬至' },
+  { month: '十二月', branch: '丑', name: '临', lines: [1,1,0,0,0,0], terms: ['小寒','大寒'], meaning: '阳气渐长' },
+  { month: '正月', branch: '寅', name: '泰', lines: [1,1,1,0,0,0], terms: ['立春','雨水'], meaning: '三阳开泰' },
+  { month: '二月', branch: '卯', name: '大壮', lines: [1,1,1,1,0,0], terms: ['惊蛰','春分'], meaning: '阳气壮盛' },
+  { month: '三月', branch: '辰', name: '夬', lines: [1,1,1,1,1,0], terms: ['清明','谷雨'], meaning: '阳气将极' },
+  { month: '四月', branch: '巳', name: '乾', lines: [1,1,1,1,1,1], terms: ['立夏','小满'], meaning: '纯阳至刚' },
+  { month: '五月', branch: '午', name: '姤', lines: [0,1,1,1,1,1], terms: ['芒种','夏至'], meaning: '阴气始生', note: '夏至' },
+  { month: '六月', branch: '未', name: '遁', lines: [0,0,1,1,1,1], terms: ['小暑','大暑'], meaning: '阴气渐长' },
+  { month: '七月', branch: '申', name: '否', lines: [0,0,0,1,1,1], terms: ['立秋','处暑'], meaning: '天地不交' },
+  { month: '八月', branch: '酉', name: '观', lines: [0,0,0,0,1,1], terms: ['白露','秋分'], meaning: '阴盛阳消' },
+  { month: '九月', branch: '戌', name: '剥', lines: [0,0,0,0,0,1], terms: ['寒露','霜降'], meaning: '阳气将尽' },
+  { month: '十月', branch: '亥', name: '坤', lines: [0,0,0,0,0,0], terms: ['立冬','小雪'], meaning: '纯阴至柔' },
+];
+
+const grid = document.getElementById('grid');
+hexagrams.forEach((h, i) => {
+  const yangCount = h.lines.filter(l => l === 1).length;
+  const yinCount = 6 - yangCount;
+  const isPeak = (h.name === '乾' || h.name === '坤');
+  const type = isPeak ? 'peak' : (i < 6 ? 'yang-month' : 'yin-month');
+
+  let linesHTML = '';
+  // Render bottom to top (reverse for visual)
+  for (let j = 5; j >= 0; j--) {
+    if (h.lines[j] === 1) {
+      linesHTML += '<div class="line yang"></div>';
+    } else {
+      linesHTML += '<div class="line-pair"><div class="line yin"></div><div class="line yin"></div></div>';
+    }
+  }
+
+  const card = document.createElement('div');
+  card.className = `hex-card ${type}`;
+  card.innerHTML = `
+    <div class="month-label">${h.month}${h.note ? ' · ' + h.note : ''}</div>
+    <div class="branch">${h.branch}</div>
+    <div class="hex-name">${h.name}卦</div>
+    <div class="lines">${linesHTML}</div>
+    <div class="yang-count">阳${yangCount} 阴${yinCount}</div>
+    <div class="solar-terms">${h.terms.map(t => `<span>${t}</span>`).join('')}</div>
+    <div class="meaning">${h.meaning}</div>
+  `;
+  grid.appendChild(card);
+});
+
+// Draw circular diagram
+const canvas = document.getElementById('circularCanvas');
+const ctx = canvas.getContext('2d');
+const W = 700, H = 700;
+const cx = W/2, cy = H/2;
+const R = 260;
+
+ctx.fillStyle = '#0a0a1a';
+ctx.fillRect(0, 0, W, H);
+
+// Title
+ctx.fillStyle = '#f0d060';
+ctx.font = '18px "Noto Serif SC", serif';
+ctx.textAlign = 'center';
+ctx.fillText('阳息阴消', cx, cy - R - 50);
+ctx.fillText('︵左半圆：阳气生长︶', cx, cy - R - 30);
+
+ctx.fillText('阴消阳长', cx, cy + R + 65);
+ctx.fillText('︶右半圆：阴气生长︵', cx, cy + R + 85);
+
+// Draw circular arrangement
+hexagrams.forEach((h, i) => {
+  const yangCount = h.lines.filter(l => l === 1).length;
+  // Start from bottom (子=270°), go clockwise
+  const angle = (270 + i * 30) * Math.PI / 180;
+  const x = cx + R * Math.cos(angle);
+  const y = cy + R * Math.sin(angle);
+
+  // Draw hexagram lines bars radiating outward
+  const innerR = R - 60;
+  const outerR = R + 60;
+  const lineSpacing = 12;
+  
+  for (let j = 0; j < 6; j++) {
+    const lineAngle = angle;
+    const offset = (j - 2.5) * lineSpacing;
+    const perpAngle = angle + Math.PI/2;
+    const lx = cx + R * Math.cos(lineAngle) + offset * Math.cos(perpAngle);
+    const ly = cy + R * Math.sin(lineAngle) + offset * Math.sin(perpAngle);
+    
+    const dx = Math.cos(lineAngle);
+    const dy = Math.sin(lineAngle);
+    
+    if (h.lines[j] === 1) {
+      // Yang line
+      ctx.beginPath();
+      ctx.strokeStyle = '#e8a030';
+      ctx.lineWidth = 3;
+      ctx.moveTo(lx - 18*dx, ly - 18*dy);
+      ctx.lineTo(lx + 18*dx, ly + 18*dy);
+      ctx.stroke();
+    } else {
+      // Yin line (two short segments)
+      ctx.beginPath();
+      ctx.strokeStyle = '#4080d0';
+      ctx.lineWidth = 3;
+      ctx.moveTo(lx - 18*dx, ly - 18*dy);
+      ctx.lineTo(lx - 5*dx, ly - 5*dy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(lx + 5*dx, ly + 5*dy);
+      ctx.lineTo(lx + 18*dx, ly + 18*dy);
+      ctx.stroke();
+    }
+  }
+
+  // Branch label outside
+  const labelR = R + 90;
+  const lx2 = cx + labelR * Math.cos(angle);
+  const ly2 = cy + labelR * Math.sin(angle);
+  
+  ctx.fillStyle = i < 6 ? '#e8a030' : '#4080d0';
+  if (h.name === '乾' || h.name === '坤') ctx.fillStyle = '#f0d060';
+  ctx.font = 'bold 22px "Noto Serif SC", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(h.branch, lx2, ly2);
+
+  // Hexagram name inside
+  const nameR = R - 90;
+  const nx = cx + nameR * Math.cos(angle);
+  const ny = cy + nameR * Math.sin(angle);
+  ctx.fillStyle = '#f0d060';
+  ctx.font = '16px "Noto Serif SC", serif';
+  ctx.fillText(h.name, nx, ny);
+
+  // Solar terms even more inside
+  const termR = R - 120;
+  const tx = cx + termR * Math.cos(angle);
+  const ty = cy + termR * Math.sin(angle);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px "Noto Serif SC", serif';
+  ctx.fillText(h.terms[0], tx, ty - 7);
+  ctx.fillText(h.terms[1], tx, ty + 7);
+});
+
+// Center text
+ctx.fillStyle = '#f0d060';
+ctx.font = 'bold 24px "Noto Serif SC", serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('太极', cx, cy - 10);
+ctx.fillStyle = '#888';
+ctx.font = '13px "Noto Serif SC", serif';
+ctx.fillText('阴阳消长', cx, cy + 15);
+ctx.fillText('周而复始', cx, cy + 33);
+
+// Draw dividing line (left=yang growth, right=yin growth)
+ctx.beginPath();
+ctx.strokeStyle = '#333';
+ctx.lineWidth = 1;
+ctx.setLineDash([4,4]);
+ctx.moveTo(cx, cy - R - 20);
+ctx.lineTo(cx, cy + R + 20);
+ctx.stroke();
+ctx.setLineDash([]);
+
+</script>
+</body>
+</html>

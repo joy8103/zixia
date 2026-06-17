@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一次函数演示 · 紫虾数学</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    background: #1a0a2e;
+    color: #e8e0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 14px;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+    margin: 6px 0 2px;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { font-size: 0.7rem; color: #8b7fa8; margin-bottom: 10px; }
+
+  .canvas-wrap {
+    background: rgba(45, 27, 105, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+  }
+  canvas { display: block; width: 100%; height: auto; }
+
+  /* Tab 切换 */
+  .tabs {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 0.78rem;
+    cursor: pointer;
+    background: rgba(45, 27, 105, 0.25);
+    color: #8b7fa8;
+    border: none;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(168, 85, 247, 0.25);
+    color: #fff;
+    font-weight: 600;
+  }
+  .tab:hover { color: #ddd; }
+
+  /* 输入区 */
+  .input-area {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .input-area input {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(45, 27, 105, 0.35);
+    color: #fff;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .input-area input:focus { border-color: #a855f7; }
+  .input-area input::placeholder { color: #5a5080; }
+  .input-area button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #a855f7;
+    background: rgba(168, 85, 247, 0.2);
+    color: #d0c0e8;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .input-area button:hover { background: rgba(168, 85, 247, 0.4); color: #fff; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 10px;
+  }
+  @media (max-width: 500px) { .controls { grid-template-columns: 1fr; } }
+
+  .slider-group {
+    background: rgba(45, 27, 105, 0.35);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+    color: #d0c0e8;
+  }
+  .slider-group label .val {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 40px;
+    text-align: right;
+  }
+  .slider-group input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    outline: none;
+  }
+  .slider-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #a855f7;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  }
+
+  /* 双线颜色标记 */
+  .slider-group.l1 { border-left: 3px solid #f5a623; }
+  .slider-group.l2 { border-left: 3px solid #50fa7b; }
+  .slider-group.l1 label .val { color: #f5a623; }
+  .slider-group.l2 label .val { color: #50fa7b; }
+
+  .equation-box {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 8px;
+    padding: 10px 16px;
+    background: rgba(45, 27, 105, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .eq-l1 { color: #f5a623; }
+  .eq-l2 { color: #50fa7b; }
+
+  .comparison-box {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 6px;
+    padding: 8px 14px;
+    background: rgba(45, 27, 105, 0.25);
+    border: 1px solid rgba(168, 85, 247, 0.12);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #c0b0e0;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .presets {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 8px;
+  }
+  .presets button {
+    padding: 5px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.1);
+    color: #d0c0e8;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .presets button:hover {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: #a855f7;
+    color: #fff;
+  }
+
+  .tip {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 6px;
+    font-size: 0.68rem;
+    color: #8b7fa8;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>📐 一次函数 · y = kx + b</h1>
+<p class="subtitle">旋转 | 平移 | 双线对比 | 输入函数 | 紫虾数学</p>
+
+<div class="canvas-wrap">
+  <canvas id="c" width="600" height="480"></canvas>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tabSingle" onclick="switchMode('single')">📏 单线模式</button>
+  <button class="tab" id="tabDual" onclick="switchMode('dual')">⚔️ 双线对比</button>
+</div>
+
+<!-- 单线模式输入 -->
+<div class="input-area" id="inputSingle">
+  <input type="text" id="funcInput1" placeholder="输入函数，如 y=2x+3 或 y=-x-1" onkeydown="if(event.key==='Enter')parseAndApplySingle()">
+  <button onclick="parseAndApplySingle()">应用</button>
+</div>
+
+<!-- 双线模式输入 -->
+<div class="input-area" id="inputDual" style="display:none">
+  <input type="text" id="funcInputL1" placeholder="L1 表达式，如 y=2x+1" style="border-left:3px solid #f5a623" onkeydown="if(event.key==='Enter')parseAndApplyDual()">
+  <input type="text" id="funcInputL2" placeholder="L2 表达式，如 y=x+3" style="border-left:3px solid #50fa7b" onkeydown="if(event.key==='Enter')parseAndApplyDual()">
+  <button onclick="parseAndApplyDual()">对比</button>
+</div>
+
+<div class="equation-box" id="equationBox">
+  <span class="eq-l1">y = x</span>
+  <span id="eqSep" style="display:none;color:#8b7fa8;margin:0 8px;"> ｜ </span>
+  <span class="eq-l2" id="eqL2" style="display:none"></span>
+</div>
+
+<div class="comparison-box" id="comparisonBox" style="display:none"></div>
+
+<!-- 单线控件 -->
+<div class="controls" id="ctrlSingle">
+  <div class="slider-group">
+    <label>🔄 斜率 k（旋转）<span class="val" id="kVal">+1</span></label>
+    <input type="range" id="kSlider" min="-5" max="5" step="0.05" value="1">
+  </div>
+  <div class="slider-group">
+    <label>↕️ 截距 b（平移）<span class="val" id="bVal">+0</span></label>
+    <input type="range" id="bSlider" min="-8" max="8" step="0.1" value="0">
+  </div>
+</div>
+
+<!-- 双线控件 -->
+<div class="controls" id="ctrlDual" style="display:none">
+  <div class="slider-group l1">
+    <label>🟠 L1 斜率 k₁<span class="val" id="k1Val">+2</span></label>
+    <input type="range" id="k1Slider" min="-5" max="5" step="0.05" value="2">
+  </div>
+  <div class="slider-group l2">
+    <label>🟢 L2 斜率 k₂<span class="val" id="k2Val">+1</span></label>
+    <input type="range" id="k2Slider" min="-5" max="5" step="0.05" value="1">
+  </div>
+  <div class="slider-group l1">
+    <label>🟠 L1 截距 b₁<span class="val" id="b1Val">+1</span></label>
+    <input type="range" id="b1Slider" min="-8" max="8" step="0.1" value="1">
+  </div>
+  <div class="slider-group l2">
+    <label>🟢 L2 截距 b₂<span class="val" id="b2Val">+3</span></label>
+    <input type="range" id="b2Slider" min="-8" max="8" step="0.1" value="3">
+  </div>
+</div>
+
+<div class="presets" id="presetSingle">
+  <button onclick="setPreset(1,0)">y=x</button>
+  <button onclick="setPreset(2,0)">y=2x</button>
+  <button onclick="setPreset(-1,0)">y=-x</button>
+  <button onclick="setPreset(0.5,3)">y=0.5x+3</button>
+  <button onclick="setPreset(1,-2)">↓2</button>
+  <button onclick="setPreset(1,4)">↑4</button>
+  <button onclick="setPreset(-2,2)">y=-2x+2</button>
+  <button onclick="setPreset(3,0)">y=3x</button>
+</div>
+
+<div class="presets" id="presetDual" style="display:none">
+  <button onclick="setDualPreset(2,1,1,3)">L1>L2 x>2</button>
+  <button onclick="setDualPreset(1,-1,0,2)">L1>L2 x>1</button>
+  <button onclick="setDualPreset(1,2,-1,4)">交点(1,3)</button>
+  <button onclick="setDualPreset(3,1,0,0)">k₁>k₂ 交叉</button>
+  <button onclick="setDualPreset(2,2,1,1)">k₁=k₂ 平行</button>
+  <button onclick="setDualPreset(-1,1,2,-2)">一正一负</button>
+  <button onclick="switchToProblem('l1_gt_l2_xgt2')">当x>2时L1>L2</button>
+  <button onclick="switchToProblem('l1_gt_l2_xgt1')">当x>1时L1>L2</button>
+</div>
+
+<p class="tip">🖱️ 拖动滑块 | 直接拖拽画布上的直线 | 输入表达式 | 紫虾 🌹</p>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const originX = W / 2, originY = H / 2;
+const scale = 40;
+
+let mode = 'single';
+
+function toScreen(x, y) {
+  return [originX + x * scale, originY - y * scale];
+}
+
+function switchMode(m) {
+  mode = m;
+  document.getElementById('tabSingle').classList.toggle('active', m === 'single');
+  document.getElementById('tabDual').classList.toggle('active', m === 'dual');
+  document.getElementById('inputSingle').style.display = m === 'single' ? 'flex' : 'none';
+  document.getElementById('inputDual').style.display = m === 'dual' ? 'flex' : 'none';
+  document.getElementById('ctrlSingle').style.display = m === 'single' ? 'grid' : 'none';
+  document.getElementById('ctrlDual').style.display = m === 'dual' ? 'grid' : 'none';
+  document.getElementById('presetSingle').style.display = m === 'single' ? 'flex' : 'none';
+  document.getElementById('presetDual').style.display = m === 'dual' ? 'flex' : 'none';
+  document.getElementById('comparisonBox').style.display = m === 'dual' ? 'block' : 'none';
+  document.getElementById('eqSep').style.display = m === 'dual' ? 'inline' : 'none';
+  document.getElementById('eqL2').style.display = m === 'dual' ? 'inline' : 'none';
+  draw();
+}
+
+function fmtK(k) {
+  if (k === 0) return '0';
+  if (k === 1) return '';
+  if (k === -1) return '-';
+  return k % 1 === 0 ? k.toFixed(0) : k.toFixed(2);
+}
+function fmtB(b) {
+  if (b === 0) return '';
+  return (b > 0 ? '+' : '−') + (Math.abs(b) % 1 === 0 ? Math.abs(b).toFixed(0) : Math.abs(b).toFixed(1));
+}
+function fmtEq(k, b) {
+  if (k === 0) return 'y = ' + b;
+  return `y = ${fmtK(k)}x${fmtB(b)}`;
+}
+function fmtNum(n) { return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2); }
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(120,100,160,0.10)';
+  ctx.lineWidth = 0.5;
+  for (let x = -20; x <= 20; x++) {
+    const [sx] = toScreen(x, 0);
+    ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
+  }
+  for (let y = -20; y <= 20; y++) {
+    const [, sy] = toScreen(0, y);
+    ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(W, sy); ctx.stroke();
+  }
+}
+
+function drawAxes() {
+  ctx.strokeStyle = 'rgba(200,180,240,0.5)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(W, originY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, H); ctx.stroke();
+
+  // arrows
+  ctx.fillStyle = 'rgba(200,180,240,0.5)';
+  ctx.beginPath(); ctx.moveTo(W-4, originY); ctx.lineTo(W-14, originY-5); ctx.lineTo(W-14, originY+5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(originX, 4); ctx.lineTo(originX-5, 14); ctx.lineTo(originX+5, 14); ctx.fill();
+
+  // tick marks
+  ctx.fillStyle = '#8b7fa8';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  for (let x = -7; x <= 7; x++) {
+    if (x === 0) continue;
+    const [sx] = toScreen(x, 0);
+    ctx.beginPath(); ctx.moveTo(sx, originY-3); ctx.lineTo(sx, originY+3);
+    ctx.strokeStyle = 'rgba(200,180,240,0.25)'; ctx.stroke();
+    ctx.fillText(x, sx, originY + 14);
+  }
+  ctx.textAlign = 'right';
+  for (let y = -6; y <= 6; y++) {
+    if (y === 0) continue;
+    const [, sy] = toScreen(0, y);
+    ctx.beginPath(); ctx.moveTo(originX-3, sy); ctx.lineTo(originX+3, sy);
+    ctx.strokeStyle = 'rgba(200,180,240,0.25)'; ctx.stroke();
+    ctx.fillText(y, originX-6, sy + 3);
+  }
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'right';
+  ctx.fillText('O', originX-6, originY + 13);
+  ctx.fillStyle = 'rgba(200,180,240,0.4)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('x', W-12, originY-8);
+  ctx.fillText('y', originX+8, 16);
+}
+
+function drawLine(k, b, color, glowColor, label, showEq) {
+  const xMin = -(originX / scale);
+  const xMax = (W - originX) / scale;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  const [sx0, sy0] = toScreen(xMin, k * xMin + b);
+  ctx.moveTo(sx0, sy0);
+  const [sx1, sy1] = toScreen(xMax, k * xMax + b);
+  ctx.lineTo(sx1, sy1);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // 截距点
+  const [bx, by] = toScreen(0, b);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI*2); ctx.fill();
+
+  // 线上远离截距处标方程
+  const labelX = xMax - 1.5;
+  const labelY = k * labelX + b;
+  if (labelY > -(originY/scale) && labelY < (H-originY)/scale) {
+    const [lx, ly] = toScreen(labelX, labelY);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${label}`, lx - 4, ly - 8);
+  }
+
+  // 标注 (1, k+b)
+  if (1 >= xMin && 1 <= xMax) {
+    const py = k + b;
+    if (py > -(originY/scale) && py < (H-originY)/scale) {
+      const [px, pY] = toScreen(1, py);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, pY, 3.5, 0, Math.PI*2); ctx.fill();
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawAxes();
+
+  if (mode === 'single') {
+    const k = parseFloat(document.getElementById('kSlider').value);
+    const b = parseFloat(document.getElementById('bSlider').value);
+    const eq = fmtEq(k, b);
+
+    drawLine(k, b, '#f5a623', 'rgba(245,166,35,0.4)', eq, true);
+    document.getElementById('equationBox').innerHTML = `<span class="eq-l1">${eq}</span>`;
+    document.getElementById('kVal').textContent = (k >= 0 ? '+' : '') + fmtNum(k);
+    document.getElementById('bVal').textContent = (b >= 0 ? '+' : '') + fmtNum(b);
+    document.getElementById('eqSep').style.display = 'none';
+    document.getElementById('eqL2').style.display = 'none';
+
+  } else {
+    const k1 = parseFloat(document.getElementById('k1Slider').value);
+    const b1 = parseFloat(document.getElementById('b1Slider').value);
+    const k2 = parseFloat(document.getElementById('k2Slider').value);
+    const b2 = parseFloat(document.getElementById('b2Slider').value);
+    const eq1 = fmtEq(k1, b1);
+    const eq2 = fmtEq(k2, b2);
+
+    drawLine(k1, b1, '#f5a623', 'rgba(245,166,35,0.4)', 'L₁', true);
+    drawLine(k2, b2, '#50fa7b', 'rgba(80,250,123,0.4)', 'L₂', true);
+
+    document.getElementById('eqSep').style.display = 'inline';
+    document.getElementById('eqL2').style.display = 'inline';
+    document.getElementById('equationBox').innerHTML = `<span class="eq-l1">L₁: ${eq1}</span><span style="color:#8b7fa8;margin:0 8px;">｜</span><span class="eq-l2">L₂: ${eq2}</span>`;
+
+    document.getElementById('k1Val').textContent = (k1 >= 0 ? '+' : '') + fmtNum(k1);
+    document.getElementById('b1Val').textContent = (b1 >= 0 ? '+' : '') + fmtNum(b1);
+    document.getElementById('k2Val').textContent = (k2 >= 0 ? '+' : '') + fmtNum(k2);
+    document.getElementById('b2Val').textContent = (b2 >= 0 ? '+' : '') + fmtNum(b2);
+
+    // 分析两条线的关系
+    let compHTML = '';
+    if (Math.abs(k1 - k2) < 0.001) {
+      // 平行
+      if (Math.abs(b1 - b2) < 0.001) {
+        compHTML = '🔍 L₁ 与 L₂ <b>重合</b>（完全相同的直线）';
+      } else {
+        compHTML = `🔍 L₁ 与 L₂ <b>平行</b>（k₁ = k₂ = ${fmtNum(k1)}），间距为 ${fmtNum(Math.abs(b1-b2))}`;
+        compHTML += `<br>${b1 > b2 ? 'L₁ 始终在 L₂ 上方' : 'L₂ 始终在 L₁ 上方'}`;
+      }
+    } else {
+      // 有交点
+      const xInt = (b2 - b1) / (k1 - k2);
+      const yInt = k1 * xInt + b1;
+      const rx = Math.round(xInt * 100) / 100;
+      const ry = Math.round(yInt * 100) / 100;
+
+      // 画交点
+      if (xInt > -(originX/scale) && xInt < (W-originX)/scale && yInt > -(originY/scale) && yInt < (H-originY)/scale) {
+        const [ix, iy] = toScreen(xInt, yInt);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ix, iy, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#1a0a2e';
+        ctx.beginPath(); ctx.arc(ix, iy, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText(`(${rx}, ${ry})`, ix + 10, iy - 6);
+      }
+
+      compHTML = `🔍 <b>交点</b>：(${rx}, ${ry})`;
+      if (k1 > k2) {
+        compHTML += `<br>📐 k₁ > k₂，L₁ 更陡峭`;
+        compHTML += `<br>👉 当 x > ${rx} 时，<span style="color:#f5a623">L₁</span> > <span style="color:#50fa7b">L₂</span>`;
+        compHTML += `<br>👉 当 x < ${rx} 时，<span style="color:#50fa7b">L₂</span> > <span style="color:#f5a623">L₁</span>`;
+      } else {
+        compHTML += `<br>📐 k₂ > k₁，L₂ 更陡峭`;
+        compHTML += `<br>👉 当 x > ${rx} 时，<span style="color:#50fa7b">L₂</span> > <span style="color:#f5a623">L₁</span>`;
+        compHTML += `<br>👉 当 x < ${rx} 时，<span style="color:#f5a623">L₁</span> > <span style="color:#50fa7b">L₂</span>`;
+      }
+
+      // 高亮 x > xInt 区域中上方的线
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      const [cx, cy] = toScreen(xInt, 0);
+      ctx.fillStyle = k1 > k2 ? '#f5a623' : '#50fa7b';
+      ctx.fillRect(cx, 0, W - cx, H);
+      ctx.fillStyle = k1 > k2 ? '#50fa7b' : '#f5a623';
+      ctx.fillRect(0, 0, cx, H);
+      ctx.restore();
+
+      // 虚线标记 x = 交点
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    document.getElementById('comparisonBox').innerHTML = compHTML;
+  }
+}
+
+// 事件绑定
+document.getElementById('kSlider').addEventListener('input', draw);
+document.getElementById('bSlider').addEventListener('input', draw);
+document.getElementById('k1Slider').addEventListener('input', draw);
+document.getElementById('b1Slider').addEventListener('input', draw);
+document.getElementById('k2Slider').addEventListener('input', draw);
+document.getElementById('b2Slider').addEventListener('input', draw);
+
+function setPreset(k, b) {
+  document.getElementById('kSlider').value = k;
+  document.getElementById('bSlider').value = b;
+  draw();
+}
+
+function setDualPreset(k1, b1, k2, b2) {
+  document.getElementById('k1Slider').value = k1;
+  document.getElementById('b1Slider').value = b1;
+  document.getElementById('k2Slider').value = k2;
+  document.getElementById('b2Slider').value = b2;
+  if (mode !== 'dual') switchMode('dual');
+  draw();
+}
+
+function switchToProblem(id) {
+  switchMode('dual');
+  const map = {
+    'l1_gt_l2_xgt2': [2, 1, 1, 3],
+    'l1_gt_l2_xgt1': [1, 0, 0.5, 1],
+  };
+  const [k1, b1, k2, b2] = map[id] || [2, 1, 1, 3];
+  document.getElementById('k1Slider').value = k1;
+  document.getElementById('b1Slider').value = b1;
+  document.getElementById('k2Slider').value = k2;
+  document.getElementById('b2Slider').value = b2;
+  draw();
+}
+
+// 输入解析 y=kx+b 或 y=kx-b
+function parseFunc(str) {
+  str = str.replace(/\s/g, '').replace(/，/g, ',');
+  const m = str.match(/^y\s*=\s*(.+)$/);
+  if (!m) return null;
+  let expr = m[1];
+  // 处理 -x 等情况
+  expr = expr.replace(/(?<!\d)-/g, '+-');
+  const parts = expr.split('+').filter(s => s);
+  let k = 0, b = 0;
+  for (const p of parts) {
+    let s = p.trim();
+    if (!s) continue;
+    const neg = s.startsWith('−') || s.startsWith('-');
+    if (neg) s = s.slice(1);
+    if (s.includes('x') || s.includes('X')) {
+      s = s.replace(/[xX]/, '').trim();
+      let v = s === '' || s === '−' || s === '-' ? 1 : parseFloat(s);
+      if (isNaN(v)) return null;
+      k = neg ? -v : v;
+    } else {
+      const v = parseFloat(s);
+      if (isNaN(v)) return null;
+      b = neg ? -v : v;
+    }
+  }
+  return { k, b };
+}
+
+function parseAndApplySingle() {
+  const raw = document.getElementById('funcInput1').value.trim();
+  const parsed = parseFunc(raw);
+  if (!parsed) { alert('格式不对，试试 y=2x+3 或 y=-x-1'); return; }
+  if (Math.abs(parsed.k) > 5 || Math.abs(parsed.b) > 8) {
+    alert(`k 需在 [-5,5]、b 需在 [-8,8] 范围内`);
+    return;
+  }
+  document.getElementById('kSlider').value = parsed.k;
+  document.getElementById('bSlider').value = parsed.b;
+  draw();
+}
+
+function parseAndApplyDual() {
+  const r1 = document.getElementById('funcInputL1').value.trim();
+  const r2 = document.getElementById('funcInputL2').value.trim();
+  const p1 = parseFunc(r1);
+  const p2 = parseFunc(r2);
+  if (!p1 || !p2) { alert('两个表达式格式都要正确哦'); return; }
+  if (Math.abs(p1.k) > 5 || Math.abs(p1.b) > 8 || Math.abs(p2.k) > 5 || Math.abs(p2.b) > 8) {
+    alert('k 需在 [-5,5]、b 需在 [-8,8]'); return;
+  }
+  document.getElementById('k1Slider').value = p1.k;
+  document.getElementById('b1Slider').value = p1.b;
+  document.getElementById('k2Slider').value = p2.k;
+  document.getElementById('b2Slider').value = p2.b;
+  if (mode !== 'dual') switchMode('dual');
+  draw();
+}
+
+// 拖拽支持（单线和双线都支持）
+let dragging = false, dragTarget = null, startY = 0, startK = 0, startB = 0;
+let lastTap = 0;
+
+canvas.addEventListener('pointerdown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) * (W / rect.width);
+  const sy = (e.clientY - rect.top) * (H / rect.height);
+  const xWorld = (sx - originX) / scale;
+  const yWorld = (originY - sy) / scale;
+
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    if (mode === 'single') setPreset(1, 0);
+    else setDualPreset(2, 1, 1, 3);
+    lastTap = 0;
+    return;
+  }
+  lastTap = now;
+
+  // 检测离哪条线最近
+  let bestDist = 1.5, bestLine = null, bestK = 0, bestB = 0;
+  const lines = mode === 'single'
+    ? [[parseFloat(document.getElementById('kSlider').value), parseFloat(document.getElementById('bSlider').value), 'single']]
+    : [
+        [parseFloat(document.getElementById('k1Slider').value), parseFloat(document.getElementById('b1Slider').value), 'l1'],
+        [parseFloat(document.getElementById('k2Slider').value), parseFloat(document.getElementById('b2Slider').value), 'l2'],
+      ];
+  for (const [k, b, id] of lines) {
+    const lineY = k * xWorld + b;
+    const dist = Math.abs(yWorld - lineY);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestLine = id;
+      bestK = k;
+      bestB = b;
+    }
+  }
+  if (bestLine) {
+    dragging = true;
+    dragTarget = bestLine;
+    startY = sy;
+    startK = bestK;
+    startB = bestB;
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  const sy = (e.clientY - rect.top) * (H / rect.height);
+  const dy = -(sy - startY) / scale;
+
+  const relX = Math.abs((e.clientX - rect.left) * (W / rect.width) - originX) / scale;
+  const isRotate = relX > 2; // 远离 y 轴→旋转，近→平移
+
+  const updateSlider = (kId, bId) => {
+    if (isRotate) {
+      let nk = startK + dy * 0.5;
+      nk = Math.round(nk * 20) / 20;
+      if (Math.abs(nk) <= 5) document.getElementById(kId).value = nk;
+    } else {
+      let nb = startB + dy;
+      nb = Math.round(nb * 10) / 10;
+      if (Math.abs(nb) <= 8) document.getElementById(bId).value = nb;
+    }
+    draw();
+  };
+
+  if (dragTarget === 'single') updateSlider('kSlider', 'bSlider');
+  else if (dragTarget === 'l1') updateSlider('k1Slider', 'b1Slider');
+  else if (dragTarget === 'l2') updateSlider('k2Slider', 'b2Slider');
+});
+
+canvas.addEventListener('pointerup', () => { dragging = false; });
+canvas.addEventListener('pointerleave', () => { dragging = false; });
+
+draw();
+</script>
+</body>
+</html>
