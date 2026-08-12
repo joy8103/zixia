@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五行相生相克 · 紫虾仙子</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #fafafa;
+    --bg-card: #ffffff;
+    --border: #e5e5e5;
+    --border-light: #f0f0f0;
+    --text: #1a1a1a;
+    --text-secondary: #666666;
+    --text-dim: #999999;
+    --accent: #7c3aed;
+    --wood: #22c55e;
+    --wood-light: #dcfce7;
+    --fire: #ef4444;
+    --fire-light: #fee2e2;
+    --earth: #d4a04c;
+    --earth-light: #fef3c7;
+    --metal: #94a3b8;
+    --metal-light: #e2e8f0;
+    --water: #3b82f6;
+    --water-light: #dbeafe;
+    --sans: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(250,250,250,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 600; font-size: 15px; color: var(--text);
+    text-decoration: none;
+  }
+
+  .nav-brand .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34,197,94,0.4);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .nav-links a {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .nav-links a:hover {
+    background: #f5f5f5;
+    color: var(--text);
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 24px 60px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  /* Canvas */
+  .canvas-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 40px;
+  }
+
+  canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+
+  .btn:hover {
+    box-shadow: var(--shadow);
+  }
+
+  .btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #f5f3ff;
+  }
+
+  /* Info Panel */
+  .info-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .info-panel h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .relation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .relation-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    transition: all 0.2s;
+  }
+
+  .relation-item:hover {
+    box-shadow: var(--shadow);
+  }
+
+  .relation-item .arrow {
+    font-size: 18px;
+    color: var(--text-dim);
+  }
+
+  .relation-item.sheng .arrow { color: #22c55e; }
+  .relation-item.ke .arrow { color: #ef4444; }
+
+  .element-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .el-wood { background: var(--wood); }
+  .el-fire { background: var(--fire); }
+  .el-earth { background: var(--earth); }
+  .el-metal { background: var(--metal); }
+  .el-water { background: var(--water); }
+
+  .relation-item .label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .relation-item .label strong {
+    color: var(--text);
+  }
+
+  /* Explanation */
+  .explanation {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 28px;
+    line-height: 1.9;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .explanation h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+    margin-top: 20px;
+  }
+
+  .explanation h3:first-child { margin-top: 0; }
+
+  .explanation strong {
+    color: var(--text);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 24px;
+    transition: color 0.2s;
+  }
+
+  .back-link:hover { color: var(--accent); }
+
+  @media (max-width: 540px) {
+    .page-header h1 { font-size: 24px; }
+    main { padding: 72px 16px 40px; }
+    canvas { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">
+    <span class="dot"></span>
+    紫虾仙子
+  </a>
+  <div class="nav-links">
+    <a href="/">首页</a>
+    <a href="#shengke">相生相克</a>
+    <a href="#explain">详解</a>
+  </div>
+</nav>
+
+<main>
+  <a href="/" class="back-link">← 返回首页</a>
+
+  <div class="page-header">
+    <h1>五行相生相克</h1>
+    <p>木火土金水 · 循环不息</p>
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="wuxing" width="520" height="520"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn active" id="btn-both">全部显示</button>
+    <button class="btn" id="btn-sheng">只看相生</button>
+    <button class="btn" id="btn-ke">只看相克</button>
+  </div>
+
+  <div class="info-panel" id="shengke">
+    <h3>相生关系（绿色箭头）</h3>
+    <div class="relation-grid">
+      <div class="relation-item sheng">
+        <span class="element-tag el-wood">木</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-fire">火</span>
+        <span class="label"><strong>木生火</strong>　木柴燃烧生火</span>
+      </div>
+      <div class="relation-item sheng">
+        <span class="element-tag el-fire">火</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-earth">土</span>
+        <span class="label"><strong>火生土</strong>　火燃成灰生土</span>
+      </div>
+      <div class="relation-item sheng">
+        <span class="element-tag el-earth">土</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-metal">金</span>
+        <span class="label"><strong>土生金</strong>　土中蕴藏金属</span>
+      </div>
+      <div class="relation-item sheng">
+        <span class="element-tag el-metal">金</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-water">水</span>
+        <span class="label"><strong>金生水</strong>　金属冷凝生水</span>
+      </div>
+      <div class="relation-item sheng">
+        <span class="element-tag el-water">水</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-wood">木</span>
+        <span class="label"><strong>水生木</strong>　水润生长树木</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 24px;">相克关系（红色箭头）</h3>
+    <div class="relation-grid">
+      <div class="relation-item ke">
+        <span class="element-tag el-wood">木</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-earth">土</span>
+        <span class="label"><strong>木克土</strong>　树木扎根破土</span>
+      </div>
+      <div class="relation-item ke">
+        <span class="element-tag el-earth">土</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-water">水</span>
+        <span class="label"><strong>土克水</strong>　堤坝挡水</span>
+      </div>
+      <div class="relation-item ke">
+        <span class="element-tag el-water">水</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-fire">火</span>
+        <span class="label"><strong>水克火</strong>　水灭火焰</span>
+      </div>
+      <div class="relation-item ke">
+        <span class="element-tag el-fire">火</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-metal">金</span>
+        <span class="label"><strong>火克金</strong>　火熔金属</span>
+      </div>
+      <div class="relation-item ke">
+        <span class="element-tag el-metal">金</span>
+        <span class="arrow">→</span>
+        <span class="element-tag el-wood">木</span>
+        <span class="label"><strong>金克木</strong>　斧砍伐木</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="explanation" id="explain">
+    <h3>五行是什么？</h3>
+    <p>五行（木、火、土、金、水）是中国古代哲学对万物运行规律的高度概括。它不是简单的"五种物质"，而是<strong>五种运动状态和能量形式</strong>——木代表生长扩张，火代表升腾发散，土代表承载转化，金代表收敛肃杀，水代表润泽下行。</p>
+
+    <h3>相生——事物的滋生促进</h3>
+    <p>相生关系构成一个<strong>五边形循环</strong>：木→火→土→金→水→木。每一行都是前一行的"子"，也是后一行的"母"。相生代表事物之间的<strong>正向促进</strong>——就像母亲生孩子、水浇灌树木一样自然。</p>
+    <p>在中医中，相生对应五脏关系：肝(木)生心(火)、心(火)生脾(土)、脾(土)生肺(金)、肺(金)生肾(水)、肾(水)生肝(木)。一脏虚弱，可"虚则补其母"。</p>
+
+    <h3>相克——事物的制约平衡</h3>
+    <p>相克关系构成一个<strong>五角星形</strong>：木→土→水→火→金→木。每隔一位相克，形成制约链。相克不是"消灭"，而是<strong>适度制约</strong>——就像树木防止水土流失（木克土）、堤坝防止洪水泛滥（土克水）。</p>
+    <p>没有相生，万物无法生长；没有相克，万物无限膨胀。生克并存，才能动态平衡。</p>
+
+    <h3>生克记忆口诀</h3>
+    <p><strong>相生：</strong>木火土金水，依次相生循环不息。</p>
+    <p><strong>相克：</strong>木土水火金，隔一相克制衡有序。</p>
+    <p>记住五边形是"生"，五角星是"克"，就能快速画出来。</p>
+
+    <h3>实际应用</h3>
+    <p><strong>八字命理：</strong>日主为某一行，看其余七字的五行组合，判断身强身弱，定用神忌神。</p>
+    <p><strong>中医诊病：</strong>五脏对应五行，相生为母子关系（补母泻子），相克为制约关系（抑强扶弱）。</p>
+    <p><strong>风水布局：</strong>方位对应五行（东方木、南方火、中央土、西方金、北方水），用生克关系判断方位吉凶。</p>
+    <p><strong>择日选时：</strong>日子的纳音五行与当事人年命纳音相生为吉、相克为凶。</p>
+  </div>
+</main>
+
+<script>
+const canvas = document.getElementById('wuxing');
+const ctx = canvas.getContext('2d');
+const cx = 260, cy = 260;
+const radius = 180;
+
+const elements = [
+  { name: '木', en: 'Wood', color: '#22c55e', angle: -90 },   // top
+  { name: '火', en: 'Fire', color: '#ef4444', angle: -18 },   // upper right
+  { name: '土', en: 'Earth', color: '#d4a04c', angle: 54 },   // lower right
+  { name: '金', en: 'Metal', color: '#94a3b8', angle: 126 },  // lower left
+  { name: '水', en: 'Water', color: '#3b82f6', angle: 198 },  // upper left
+];
+
+// Sheng (generating) cycle: 木→火→土→金→水→木 (adjacent, clockwise)
+// Ke (overcoming) cycle: 木→土→水→火→金→木 (skip one)
+const shengPairs = [[0,1],[1,2],[2,3],[3,4],[4,0]]; // adjacent
+const kePairs = [[0,2],[2,4],[4,1],[1,3],[3,0]];    // skip one
+
+let showMode = 'both'; // 'both', 'sheng', 'ke'
+
+function getElementPos(i) {
+  const rad = elements[i].angle * Math.PI / 180;
+  return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
+}
+
+function drawArrow(x1, y1, x2, y2, color, label, curve) {
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  // Control point for curve
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const nx = -dy / len, ny = dx / len; // normal
+  const cpx = mx + nx * curve;
+  const cpy = my + ny * curve;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+  ctx.stroke();
+
+  // Arrowhead
+  const t = 0.85;
+  const tx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cpx + t*t*x2;
+  const ty = (1-t)*(1-t)*y1 + 2*(1-t)*t*cpy + t*t*y2;
+  const angle = Math.atan2(y2 - ty, x2 - tx);
+  const arrowLen = 12;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - arrowLen * Math.cos(angle - 0.4), y2 - arrowLen * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - arrowLen * Math.cos(angle + 0.4), y2 - arrowLen * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw sheng arrows (outer, green, curved outward)
+  if (showMode === 'both' || showMode === 'sheng') {
+    shengPairs.forEach(([a, b]) => {
+      const pa = getElementPos(a);
+      const pb = getElementPos(b);
+      drawArrow(pa.x, pa.y, pb.x, pb.y, '#22c55e', '', 30);
+    });
+  }
+
+  // Draw ke arrows (inner, red, straighter)
+  if (showMode === 'both' || showMode === 'ke') {
+    kePairs.forEach(([a, b]) => {
+      const pa = getElementPos(a);
+      const pb = getElementPos(b);
+      drawArrow(pa.x, pa.y, pb.x, pb.y, '#ef4444', '', -15);
+    });
+  }
+
+  // Draw elements
+  elements.forEach((el, i) => {
+    const pos = getElementPos(i);
+    // Outer circle
+    ctx.fillStyle = el.color;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 40, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner circle (lighter)
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 32, 0, Math.PI * 2);
+    ctx.fill();
+    // Character
+    ctx.fillStyle = el.color;
+    ctx.font = 'bold 24px "Noto Sans SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(el.name, pos.x, pos.y);
+
+    // Label outside
+    ctx.fillStyle = '#999';
+    ctx.font = '11px "Inter", sans-serif';
+    const labelRad = el.angle * Math.PI / 180;
+    const lx = cx + (radius + 35) * Math.cos(labelRad);
+    const ly = cy + (radius + 35) * Math.sin(labelRad);
+    ctx.fillText(el.en, lx, ly);
+  });
+
+  // Legend
+  ctx.font = '12px "Inter", "Noto Sans SC", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  if (showMode === 'both' || showMode === 'sheng') {
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(20, 500, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#666';
+    ctx.fillText('相生（绿色弧线）', 32, 500);
+  }
+  if (showMode === 'both' || showMode === 'ke') {
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(180, 500, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#666';
+    ctx.fillText('相克（红色直线）', 192, 500);
+  }
+}
+
+// Controls
+document.getElementById('btn-both').addEventListener('click', function() {
+  showMode = 'both';
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  this.classList.add('active');
+  draw();
+});
+
+document.getElementById('btn-sheng').addEventListener('click', function() {
+  showMode = 'sheng';
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  this.classList.add('active');
+  draw();
+});
+
+document.getElementById('btn-ke').addEventListener('click', function() {
+  showMode = 'ke';
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  this.classList.add('active');
+  draw();
+});
+
+draw();
+</script>
+
+</body>
+</html>
