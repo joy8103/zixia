@@ -319,6 +319,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// LZ-String compression (minified, MIT)
+var LZString=function(){var f=String.fromCharCode;var keyStrUriSafe="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$".split("");var baseReverseDic=function(a){var b={};for(var c=0;c<a.length;c++)b[a[c]]=c;return b};var decompress=function(length,resetValue,getNextValue){var dictionary=[],enlargeIn=4,dictSize=4,numBits=3,entry="",result=[],i,w,bits,bitlen,maxpower,power,c,data={val:getNextValue(0),position:resetValue,index:1};for(i=0;i<3;i+=1)dictionary[i]=i;bits=0;bitlen=3;maxpower=Math.pow(2,2);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}next=bits;switch(next){case 0:bits=0;bitlen=3;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}w=f(bits);break;case 1:bits=0;bitlen=3;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}w=f(bits);break;case 2:return""}dictionary[3]=w;result.push(w);while(true){if(data.index>length)return"";bits=0;bitlen=3;maxpower=Math.pow(2,numBits);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}c=bits;switch(c){case 0:bits=0;bitlen=3;maxpower=Math.pow(2,8);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 1:bits=0;bitlen=3;maxpower=Math.pow(2,16);power=1;while(power!=maxpower){resb=data.val&data.position;data.position>>=1;if(data.position==0){data.position=resetValue;data.val=getNextValue(data.index++)}bits|=(resb>0?1:0)*power;power<<=1}dictionary[dictSize++]=f(bits);c=dictSize-1;enlargeIn--;break;case 2:return result.join("")}if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}if(dictionary[c])w=dictionary[c];else{if(c===dictSize)w=entry+entry.charAt(0);else return null}result.push(w);dictionary[dictSize++]=entry+w.charAt(0);enlargeIn--;entry=w;if(enlargeIn==0){enlargeIn=Math.pow(2,numBits);numBits++}}};return{compressToEncodedURIComponent:function(a){return a==null?"":""+this._compress(a,6,function(a){return keyStrUriSafe[a]})},decompressFromEncodedURIComponent:function(a){if(a==null)return"";if(a=="")return null;a=a.replace(/ /g,"+");return this._decompress(a.length,32,function(b){return baseReverseDic[keyStrUriSafe][a.charAt(b)]})},_compress:function(a,b,c){var d,e,f,g,h,i,j,k,l=[],m=2,n=3,o=4,p=5,q=6,r=7,s=0,t=0,u="",v,w,x;for(w=0;w<a.length;w+=1){d=a.charCodeAt(w);if(d<128){l[s++]=d}else if(d<2048){l[s++]=192|d>>6;l[s++]=128|d&63}else if(d<55296){l[s++]=224|d>>12;l[s++]=128|d>>6&63;l[s++]=128|d&63}else{if(w+1<a.length&&(a.charCodeAt(w+1)&64512)==56320){w+=1;x=65536+((d&1023)<<10)+(a.charCodeAt(w)&1023);l[s++]=240|x>>18;l[s++]=128|x>>12&63;l[s++]=128|x>>6&63;l[s++]=128|x&63}else{l[s++]=224|d>>12;l[s++]=128|d>>6&63;l[s++]=128|d&63}}}e=0;f=0;g=0;h=0;i=0;j=0;k=0;for(e=0;e<l.length;e+=1){h=(h<<8)+l[e];f+=8;i+=1;if(f>=b){f-=b;d=h>>f;v=d;if(k==0){if(d<256){v=d;k=0;i=0}else if(d<65536){v=d-256;k=1;i=0}}else{if(k==1){v=d;i=0}else if(i>0){i--}}if(v!=d)h=(h&(1<<f)-1)+(d&1023)<<f;d=v;g++;j++;if(g==n){g=0;n++;if(o==p){o=p;q++}s=1;while(d>=o){s++;d-=o;o<<=1}t=(t<<q)+s;k=0;i=0}if(d!=0){s=1;while(d>=o){s++;d-=o;o<<=1}t=(t<<q)+s}}else{t=(t<<q)+1;k=0;i=0}}while(t>0){t=(t<<1)+0;s++}while(i>0){t=(t<<1)+1;s++}while(t>0){t>>=1;c(t)}}return c(0)},_decompress:function(a,b,c){var d,e=[],f=4,g=4,h=3,i="",j=[],k,l,m,n,o,p,q,r,s,t;for(q=0;q<4;q+=1)e[q]=q;k=0;n=Math.pow(2,2);p=1;while(p!=n){r=c(k);k+=1;if(r==0){s=0;for(o=0;o<8;o+=1){r=c(k);k+=1;s=(s<<1)+r}e[g++]=f(s);h++;if(h==n){n<<=1;f++}}else if(r==1){s=0;for(o=0;o<16;o+=1){r=c(k);k+=1;s=(s<<1)+r}e[g++]=f(s);h++;if(h==n){n<<=1;f++}}else break}j.push(e[3]);l=e[3];m=0;while(k<a){r=c(k);k+=1;if(r==0){s=0;for(o=0;o<f;o+=1){r=c(k);k+=1;s=(s<<1)+r}e[g++]=e[s]}else if(r==1){s=0;for(o=0;o<16;o+=1){r=c(k);k+=1;s=(s<<1)+r}e[g++]=e[s]}else{if(r==2)return j.join("")}h++;j.push(l=e[s]||(m==g?l+l.charAt(0):null));if(h==n){n<<=1;f++}}return j.join("")}}}();
+</script>
+
+<script>
 const STORAGE_KEY = 'travel-map-data';
 
 function loadData() {
@@ -662,9 +667,9 @@ document.getElementById('btn-share').onclick = () => {
     };
   });
   const json = JSON.stringify(shareData);
-  // 用 btoa 编码（UTF-8安全）
-  const encoded = btoa(unescape(encodeURIComponent(json)));
-  const shareUrl = location.origin + location.pathname + '#share=' + encoded;
+  // 用 LZ-String 压缩 + URI安全编码
+  const encoded = LZString.compressToEncodedURIComponent(json);
+  const shareUrl = location.origin + location.pathname + '#s=' + encoded;
   
   // 复制到剪贴板
   if (navigator.clipboard) {
@@ -681,10 +686,11 @@ document.getElementById('btn-share').onclick = () => {
 // === 只读分享模式 ===
 function checkShareMode() {
   const hash = location.hash;
-  if (hash.startsWith('#share=')) {
+  if (hash.startsWith('#s=')) {
     try {
-      const encoded = hash.substring(7);
-      const json = decodeURIComponent(escape(atob(encoded)));
+      const encoded = hash.substring(3);
+      const json = LZString.decompressFromEncodedURIComponent(encoded);
+      if (!json) { console.error('Decompress failed'); return false; }
       const sharedData = JSON.parse(json);
       // 转换回完整格式
       const readOnlyData = {};
