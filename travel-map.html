@@ -375,6 +375,20 @@ function renderMap() {
     const coords = feature.geometry.coordinates;
     const paths = geomType === 'MultiPolygon' ? coords : [coords];
 
+    // 计算投影后的边界面积，判断是否为微型区域
+    let bounds = null;
+    const allPoints = [];
+    paths.forEach(polygon => polygon.forEach(ring =>
+      ring.forEach(([lng, lat]) => allPoints.push(project(lng, lat)))
+    ));
+    if (allPoints.length > 0) {
+      const xs = allPoints.map(p => p.x), ys = allPoints.map(p => p.y);
+      const w = Math.max(...xs) - Math.min(...xs);
+      const h = Math.max(...ys) - Math.min(...ys);
+      bounds = { w, h, area: w * h };
+    }
+    const isMicro = bounds && bounds.area < 100; // 投影面积<100平方像素
+
     paths.forEach(polygon => {
       polygon.forEach(ring => {
         const points = ring.map(([lng, lat]) => project(lng, lat));
@@ -402,6 +416,33 @@ function renderMap() {
       });
     });
 
+    // 微型区域（澳门等）添加可见标记圆
+    if (isMicro && feature.properties.center) {
+      const [lng, lat] = feature.properties.center;
+      const pos = project(lng, lat);
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', pos.x.toFixed(1));
+      circle.setAttribute('cy', pos.y.toFixed(1));
+      circle.setAttribute('r', '4');
+      circle.setAttribute('class', 'city-region');
+      circle.setAttribute('data-city', name);
+      circle.setAttribute('data-province', province);
+      circle.style.fill = travelData[name] ? 'var(--visited-fill)' : 'var(--accent)';
+      circle.style.stroke = 'var(--accent)';
+      circle.style.strokeWidth = '1';
+      circle.style.cursor = 'pointer';
+
+      circle.addEventListener('mouseenter', (e) => {
+        const info = travelData[name];
+        showTooltip(info ? `${name} · ${info.date || '已到访'}` : name, e);
+      });
+      circle.addEventListener('mouseleave', () => hideTooltip());
+      circle.addEventListener('mousemove', (e) => moveTooltip(e));
+      circle.addEventListener('click', () => openModal(name, province));
+
+      svg.appendChild(circle);
+    }
+
     // Add city name label at center
     if (feature.properties.center) {
       const [lng, lat] = feature.properties.center;
@@ -409,8 +450,11 @@ function renderMap() {
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       label.setAttribute('class', 'city-label');
       label.setAttribute('x', pos.x.toFixed(1));
-      label.setAttribute('y', (pos.y + 2).toFixed(1));
-      label.textContent = name.replace(/(市|自治州|地区|盟)$/, '');
+      // 微型区域标签偏移一点，避免和标记圆重叠
+      label.setAttribute('y', (pos.y + (isMicro ? 8 : 2)).toFixed(1));
+      label.style.fontSize = isMicro ? '8px' : '7px';
+      label.textContent = name.replace(/(市|自治州|地区|盟|特别行政区)$/, '');
+      if (isMicro) label.style.opacity = '0.7';
       svg.appendChild(label);
     }
   });
