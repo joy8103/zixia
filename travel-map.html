@@ -651,7 +651,7 @@ document.getElementById('btn-clear').onclick = () => {
 };
 
 // === 分享功能 ===
-document.getElementById('btn-share').onclick = () => {
+document.getElementById('btn-share').onclick = async () => {
   const visited = Object.keys(travelData).filter(k => travelData[k].date);
   if (visited.length === 0) {
     showToast('还没有到访记录，先添加城市吧');
@@ -667,19 +667,29 @@ document.getElementById('btn-share').onclick = () => {
     };
   });
   const json = JSON.stringify(shareData);
-  // 用 LZ-String 压缩 + URI安全编码
   const encoded = LZString.compressToEncodedURIComponent(json);
-  const shareUrl = location.origin + location.pathname + '#s=' + encoded;
+  const longUrl = location.origin + location.pathname + '#s=' + encoded;
   
-  // 复制到剪贴板
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast('分享链接已复制到剪贴板');
-    }).catch(() => {
-      prompt('复制这个链接分享给朋友：', shareUrl);
-    });
-  } else {
-    prompt('复制这个链接分享给朋友：', shareUrl);
+  showToast('正在生成短链接...');
+  try {
+    const res = await fetch('https://da.gd/s/?url=' + encodeURIComponent(longUrl));
+    const shortUrl = (await res.text()).trim();
+    if (shortUrl.startsWith('http')) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shortUrl).then(() => showToast('短链接已复制：' + shortUrl));
+      } else {
+        prompt('复制短链接分享给朋友：', shortUrl);
+      }
+    } else {
+      throw new Error('shorten failed');
+    }
+  } catch(e) {
+    // 降级：直接复制长链接
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(longUrl).then(() => showToast('短链服务不可用，已复制长链接'));
+    } else {
+      prompt('复制链接分享给朋友：', longUrl);
+    }
   }
 };
 
