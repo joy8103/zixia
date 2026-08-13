@@ -354,12 +354,15 @@ async function loadMap() {
     const res = await fetch('china-cities-final.json');
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const geojson = await res.json();
-    allFeatures = geojson.features;
+    allFeatures = geojson.features || [];
+    if (allFeatures.length === 0) throw new Error('no features in geojson');
     renderMap();
     renderFilters();
+    // 确保分享模式数据正确渲染
+    if (isReadOnly) refreshMap();
   } catch(e) {
     console.error('Map load failed:', e);
-    mapWrapper.innerHTML = '<div class="loading">地图加载失败，请刷新重试</div>';
+    mapWrapper.innerHTML = '<div class="loading">地图加载失败，请刷新重试<br><small>' + e.message + '</small></div>';
   }
 }
 
@@ -765,8 +768,9 @@ function checkShareMode() {
 
 let isReadOnly = false;
 
-loadMap();
+// 先检查分享模式（同步），再加载地图（异步）
 checkShareMode();
+loadMap();
 </script>
 </body>
 </html>
