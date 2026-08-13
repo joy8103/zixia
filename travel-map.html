@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>旅行地图 · 我的足迹</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
@@ -19,11 +17,11 @@
     --text-dim: #999;
     --accent: #7c3aed;
     --accent-light: #ede9fe;
+    --accent-hover: #c4b5fd;
     --visited: #7c3aed;
-    --visited-light: #ede9fe;
-    --hover: #c4b5fd;
+    --visited-fill: #ede9fe;
     --unvisited: #ffffff;
-    --sans: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+    --sans: 'Inter', -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
     --radius: 12px;
     --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
@@ -38,390 +36,199 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Nav */
   nav {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-light);
     padding: 0 24px; height: 56px;
     display: flex; justify-content: space-between; align-items: center;
   }
-
-  .nav-brand {
-    display: flex; align-items: center; gap: 10px;
-    font-weight: 600; font-size: 15px; color: var(--text);
-    text-decoration: none;
-  }
-
-  .nav-brand .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px rgba(124,58,237,0.4);
-  }
-
-  .nav-stats {
-    display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary);
-  }
-
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+  .nav-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px rgba(124,58,237,0.4); }
+  .nav-stats { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); }
   .nav-stats .stat { display: flex; align-items: center; gap: 4px; }
   .nav-stats .num { font-weight: 600; color: var(--accent); }
 
-  /* Layout */
   .container {
     max-width: 1200px; margin: 0 auto; padding: 24px;
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 24px;
+    display: grid; grid-template-columns: 1fr 320px; gap: 24px;
   }
+  @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
 
-  @media (max-width: 900px) {
-    .container { grid-template-columns: 1fr; }
-  }
-
-  /* Map */
   .map-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
   }
-
-  .map-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px;
-  }
-
+  .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .map-header h2 { font-size: 16px; font-weight: 600; }
-
-  .map-legend {
-    display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary);
-  }
-
+  .map-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); }
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); }
-  .legend-dot.visited { background: var(--visited); border-color: var(--visited); }
+  .legend-dot.visited { background: var(--visited-fill); border-color: var(--accent); }
   .legend-dot.unvisited { background: var(--unvisited); }
 
   .map-wrapper {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 5 / 4;
-    background: #fafafa;
-    border-radius: 8px;
-    overflow: hidden;
+    position: relative; width: 100%; aspect-ratio: 5 / 4;
+    background: #fafafa; border-radius: 8px; overflow: hidden;
   }
+  #map-svg { width: 100%; height: 100%; display: block; }
 
-  #map-svg {
-    width: 100%; height: 100%;
-    display: block;
-  }
-
-  .province {
+  .city-region {
     fill: var(--unvisited);
     stroke: #d4d4d8;
-    stroke-width: 0.8;
-    transition: fill 0.2s, stroke 0.2s;
+    stroke-width: 0.5;
+    transition: fill 0.2s, stroke 0.2s, stroke-width 0.2s;
     cursor: pointer;
   }
-
-  .province:hover {
-    fill: var(--hover);
-    stroke: var(--accent);
-    stroke-width: 1.2;
-  }
-
-  .province.visited {
-    fill: var(--visited);
-    fill-opacity: 0.7;
+  .city-region:hover {
+    fill: var(--accent-hover);
     stroke: var(--accent);
     stroke-width: 1;
   }
-
-  .province.visited:hover {
-    fill-opacity: 0.85;
+  .city-region.visited {
+    fill: var(--visited-fill);
+    stroke: var(--accent);
+    stroke-width: 0.8;
+  }
+  .city-region.visited:hover {
+    fill: #ddd6fe;
+    stroke-width: 1.2;
   }
 
-  .city-marker {
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .city-marker circle {
-    fill: #6b7280;
-    stroke: white;
-    stroke-width: 1.5;
-    transition: all 0.2s;
-  }
-
-  .city-marker.visited circle {
-    fill: var(--accent);
-    r: 5;
-  }
-
-  .city-marker:hover circle {
-    r: 7;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
-
-  .city-marker .city-label {
-    font-size: 10px;
+  .city-label {
+    font-size: 7px;
     fill: var(--text-secondary);
     text-anchor: middle;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s;
   }
-
-  .city-marker:hover .city-label,
-  .city-marker.visited .city-label {
+  .city-region:hover + .city-label,
+  .city-region.visited + .city-label {
     opacity: 1;
   }
-
-  .city-marker.visited .city-label {
+  .city-region.visited + .city-label {
     fill: var(--accent);
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  /* Tooltip */
   .tooltip {
-    position: absolute;
-    background: var(--text);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 10;
-    white-space: nowrap;
+    position: absolute; background: var(--text); color: white;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px;
+    pointer-events: none; opacity: 0; transition: opacity 0.15s;
+    z-index: 10; white-space: nowrap;
   }
-
   .tooltip.visible { opacity: 1; }
 
-  /* Sidebar */
-  .sidebar {
-    display: flex; flex-direction: column; gap: 16px;
-  }
-
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
   .sidebar-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
   }
-
-  .sidebar-card h3 {
-    font-size: 14px; font-weight: 600;
-    margin-bottom: 12px;
-    color: var(--text);
-  }
+  .sidebar-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 
   .visited-list {
-    display: flex; flex-direction: column; gap: 8px;
-    max-height: 300px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 400px; overflow-y: auto;
   }
-
   .visited-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: var(--visited-light);
-    font-size: 13px;
-    cursor: pointer;
-    transition: background 0.2s;
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--accent-light); font-size: 13px;
+    cursor: pointer; transition: background 0.2s;
   }
-
   .visited-item:hover { background: #ddd6fe; }
-
   .visited-item .city-name { font-weight: 500; color: var(--accent); }
   .visited-item .visit-date { font-size: 11px; color: var(--text-dim); }
+  .empty-state { text-align: center; padding: 24px 12px; color: var(--text-dim); font-size: 13px; }
 
-  .empty-state {
-    text-align: center; padding: 24px 12px;
-    color: var(--text-dim); font-size: 13px;
+  .progress-bar { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s; }
+  .progress-text { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 4px 10px; border-radius: 12px; font-size: 12px;
+    border: 1px solid var(--border); background: white; cursor: pointer;
+    color: var(--text-secondary); transition: all 0.2s;
   }
+  .filter-chip:hover { border-color: var(--accent); }
+  .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-  .progress-bar {
-    height: 6px; background: var(--border-light); border-radius: 3px;
-    overflow: hidden; margin-top: 8px;
-  }
-
-  .progress-fill {
-    height: 100%; background: var(--accent);
-    border-radius: 3px; transition: width 0.4s;
-  }
-
-  .progress-text {
-    display: flex; justify-content: space-between;
-    font-size: 12px; color: var(--text-secondary);
-    margin-top: 6px;
-  }
-
-  /* Modal */
   .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: none; align-items: center; justify-content: center;
-    z-index: 200;
-    padding: 20px;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
   }
-
   .modal-overlay.visible { display: flex; }
-
   .modal {
-    background: var(--bg-card);
-    border-radius: 16px;
-    box-shadow: var(--shadow-lg);
-    width: 100%; max-width: 480px;
-    max-height: 90vh; overflow-y: auto;
+    background: var(--bg-card); border-radius: 16px; box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
   }
-
   .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-light);
+    padding: 20px 24px; border-bottom: 1px solid var(--border-light);
     display: flex; justify-content: space-between; align-items: center;
   }
-
   .modal-header h2 { font-size: 18px; font-weight: 600; }
-
+  .modal-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
   .modal-close {
-    background: none; border: none; cursor: pointer;
-    font-size: 22px; color: var(--text-dim);
-    padding: 0; width: 32px; height: 32px;
+    background: none; border: none; cursor: pointer; font-size: 22px;
+    color: var(--text-dim); width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
     border-radius: 8px; transition: background 0.2s;
   }
-
   .modal-close:hover { background: #f5f5f5; }
-
   .modal-body { padding: 24px; }
-
   .form-group { margin-bottom: 20px; }
-
-  .form-group label {
-    display: block; font-size: 13px; font-weight: 500;
-    color: var(--text-secondary); margin-bottom: 6px;
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .form-group input, .form-group textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: var(--sans);
+    color: var(--text); background: white; transition: border 0.2s;
   }
-
-  .form-group input,
-  .form-group textarea {
-    width: 100%; padding: 10px 12px;
-    border: 1px solid var(--border); border-radius: 8px;
-    font-size: 14px; font-family: var(--sans);
-    color: var(--text); background: white;
-    transition: border 0.2s;
-  }
-
-  .form-group input:focus,
-  .form-group textarea:focus {
-    outline: none; border-color: var(--accent);
-  }
-
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
   .form-group textarea { resize: vertical; min-height: 70px; }
 
   .photo-urls { display: flex; flex-direction: column; gap: 8px; }
-
-  .photo-url-row {
-    display: flex; gap: 8px;
-  }
-
+  .photo-url-row { display: flex; gap: 8px; }
   .photo-url-row input { flex: 1; }
-
-  .photo-url-row .remove-photo {
-    background: #f5f5f5; border: none; cursor: pointer;
-    width: 36px; border-radius: 8px; font-size: 16px;
-    color: var(--text-dim); transition: background 0.2s;
-  }
-
+  .photo-url-row .remove-photo { background: #f5f5f5; border: none; cursor: pointer; width: 36px; border-radius: 8px; font-size: 16px; color: var(--text-dim); }
   .photo-url-row .remove-photo:hover { background: #fee2e2; color: #ef4444; }
-
-  .add-photo-btn {
-    background: none; border: 1px dashed var(--border);
-    padding: 8px; border-radius: 8px; cursor: pointer;
-    font-size: 13px; color: var(--text-secondary);
-    width: 100%; transition: all 0.2s;
-  }
-
+  .add-photo-btn { background: none; border: 1px dashed var(--border); padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); width: 100%; }
   .add-photo-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .photo-preview {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px; margin-top: 8px;
-  }
-
-  .photo-preview img {
-    width: 100%; aspect-ratio: 1; object-fit: cover;
-    border-radius: 8px;
-  }
+  .photo-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .photo-preview img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
 
   .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border-light);
+    padding: 16px 24px; border-top: 1px solid var(--border-light);
     display: flex; justify-content: space-between; align-items: center;
   }
-
-  .btn {
-    padding: 8px 20px; border-radius: 8px;
-    font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: all 0.2s;
-    border: 1px solid transparent;
-    font-family: var(--sans);
-  }
-
+  .btn { padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; font-family: var(--sans); }
   .btn-primary { background: var(--accent); color: white; }
   .btn-primary:hover { background: #6d28d9; }
-
   .btn-secondary { background: white; border-color: var(--border); color: var(--text-secondary); }
   .btn-secondary:hover { background: #f5f5f5; }
-
   .btn-danger { background: white; border-color: #fecaca; color: #ef4444; }
   .btn-danger:hover { background: #fef2f2; }
 
-  /* Loading */
-  .loading {
-    display: flex; align-items: center; justify-content: center;
-    height: 100%; color: var(--text-dim); font-size: 14px;
-  }
-
-  .loading .spinner {
-    width: 24px; height: 24px;
-    border: 2px solid var(--border-light);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-right: 8px;
-  }
-
+  .loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 14px; }
+  .loading .spinner { width: 24px; height: 24px; border: 2px solid var(--border-light); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Toast */
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--text); color: white;
-    padding: 10px 20px; border-radius: 8px;
-    font-size: 13px; box-shadow: var(--shadow-lg);
-    z-index: 300; opacity: 0;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--text); color: white; padding: 10px 20px;
+    border-radius: 8px; font-size: 13px; box-shadow: var(--shadow-lg);
+    z-index: 300; opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
-  .toast.visible {
-    opacity: 1; transform: translateX(-50%) translateY(0);
-  }
+  .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="index.html" class="nav-brand">
-    <span class="dot"></span>
-    旅行地图
-  </a>
+  <a href="index.html" class="nav-brand"><span class="dot"></span>旅行地图</a>
   <div class="nav-stats">
     <div class="stat">已去 <span class="num" id="stat-visited">0</span> 城</div>
     <div class="stat">共 <span class="num" id="stat-total">0</span> 城</div>
@@ -429,7 +236,6 @@
 </nav>
 
 <div class="container">
-  <!-- Map -->
   <div class="map-card">
     <div class="map-header">
       <h2>中国旅行足迹</h2>
@@ -438,13 +244,13 @@
         <div class="legend-item"><span class="legend-dot unvisited"></span>未到访</div>
       </div>
     </div>
+    <div class="filter-bar" id="filter-bar"></div>
     <div class="map-wrapper" id="map-wrapper">
       <div class="loading"><div class="spinner"></div>加载地图中...</div>
     </div>
     <div class="tooltip" id="tooltip"></div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-card">
       <h3>旅行进度</h3>
@@ -458,15 +264,15 @@
     <div class="sidebar-card">
       <h3>已到访城市</h3>
       <div class="visited-list" id="visited-list">
-        <div class="empty-state">还没有记录到访的城市<br>点击地图上的城市标记开始记录</div>
+        <div class="empty-state">还没有记录到访的城市<br>点击地图上的城市开始记录</div>
       </div>
     </div>
 
     <div class="sidebar-card">
       <h3>数据管理</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary" id="btn-export" style="font-size:12px;padding:6px 14px;">导出数据</button>
-        <button class="btn btn-secondary" id="btn-import" style="font-size:12px;padding:6px 14px;">导入数据</button>
+        <button class="btn btn-secondary" id="btn-export" style="font-size:12px;padding:6px 14px;">导出</button>
+        <button class="btn btn-secondary" id="btn-import" style="font-size:12px;padding:6px 14px;">导入</button>
         <button class="btn btn-danger" id="btn-clear" style="font-size:12px;padding:6px 14px;">清空</button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none;">
@@ -474,11 +280,13 @@
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="modal-city-name">编辑城市</h2>
+      <div>
+        <h2 id="modal-city-name">编辑城市</h2>
+        <div class="modal-subtitle" id="modal-city-province"></div>
+      </div>
       <button class="modal-close" id="modal-close">&times;</button>
     </div>
     <div class="modal-body">
@@ -510,146 +318,61 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ============ 主要城市数据 ============
-const CITIES = [
-  // 直辖市
-  { name: '北京', lng: 116.41, lat: 39.90, province: '北京市' },
-  { name: '上海', lng: 121.47, lat: 31.23, province: '上海市' },
-  { name: '天津', lng: 117.20, lat: 39.13, province: '天津市' },
-  { name: '重庆', lng: 106.55, lat: 29.56, province: '重庆市' },
-  // 华北
-  { name: '石家庄', lng: 114.50, lat: 38.05, province: '河北省' },
-  { name: '太原', lng: 112.55, lat: 37.87, province: '山西省' },
-  { name: '呼和浩特', lng: 111.75, lat: 40.84, province: '内蒙古自治区' },
-  // 东北
-  { name: '沈阳', lng: 123.43, lat: 41.80, province: '辽宁省' },
-  { name: '大连', lng: 121.61, lat: 38.91, province: '辽宁省' },
-  { name: '长春', lng: 125.32, lat: 43.82, province: '吉林省' },
-  { name: '哈尔滨', lng: 126.53, lat: 45.80, province: '黑龙江省' },
-  // 华东
-  { name: '南京', lng: 118.78, lat: 32.06, province: '江苏省' },
-  { name: '苏州', lng: 120.62, lat: 31.32, province: '江苏省' },
-  { name: '杭州', lng: 120.15, lat: 30.27, province: '浙江省' },
-  { name: '宁波', lng: 121.55, lat: 29.87, province: '浙江省' },
-  { name: '合肥', lng: 117.28, lat: 31.86, province: '安徽省' },
-  { name: '福州', lng: 119.30, lat: 26.08, province: '福建省' },
-  { name: '厦门', lng: 118.09, lat: 24.48, province: '福建省' },
-  { name: '南昌', lng: 115.86, lat: 28.68, province: '江西省' },
-  { name: '济南', lng: 117.00, lat: 36.65, province: '山东省' },
-  { name: '青岛', lng: 120.38, lat: 36.07, province: '山东省' },
-  { name: '台北', lng: 121.55, lat: 25.03, province: '台湾省' },
-  // 华中
-  { name: '郑州', lng: 113.62, lat: 34.75, province: '河南省' },
-  { name: '武汉', lng: 114.31, lat: 30.60, province: '湖北省' },
-  { name: '长沙', lng: 112.94, lat: 28.23, province: '湖南省' },
-  // 华南
-  { name: '广州', lng: 113.26, lat: 23.13, province: '广东省' },
-  { name: '深圳', lng: 114.06, lat: 22.55, province: '广东省' },
-  { name: '珠海', lng: 113.58, lat: 22.27, province: '广东省' },
-  { name: '南宁', lng: 108.37, lat: 22.82, province: '广西壮族自治区' },
-  { name: '海口', lng: 110.20, lat: 20.04, province: '海南省' },
-  { name: '三亚', lng: 109.51, lat: 18.25, province: '海南省' },
-  // 西南
-  { name: '成都', lng: 104.07, lat: 30.67, province: '四川省' },
-  { name: '贵阳', lng: 106.63, lat: 26.65, province: '贵州省' },
-  { name: '昆明', lng: 102.72, lat: 25.04, province: '云南省' },
-  { name: '拉萨', lng: 91.13, lat: 29.65, province: '西藏自治区' },
-  // 西北
-  { name: '西安', lng: 108.94, lat: 34.27, province: '陕西省' },
-  { name: '兰州', lng: 103.83, lat: 36.06, province: '甘肃省' },
-  { name: '西宁', lng: 101.78, lat: 36.62, province: '青海省' },
-  { name: '银川', lng: 106.23, lat: 38.49, province: '宁夏回族自治区' },
-  { name: '乌鲁木齐', lng: 87.62, lat: 43.83, province: '新疆维吾尔自治区' },
-  // 港澳
-  { name: '香港', lng: 114.17, lat: 22.32, province: '香港特别行政区' },
-  { name: '澳门', lng: 113.55, lat: 22.20, province: '澳门特别行政区' },
-];
-
-// ============ 数据存储 ============
 const STORAGE_KEY = 'travel-map-data';
 
 function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch(e) { return {}; }
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e) { return {}; }
 }
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
 let travelData = loadData();
 let currentCity = null;
+let allFeatures = [];
+let activeProvince = 'all';
 
-// ============ 地图渲染 ============
-const mapWrapper = document.getElementById('map-wrapper');
-const tooltip = document.getElementById('tooltip');
-
-// 简单的等距投影：经纬度 → SVG坐标
-// 中国范围：lng 73-135, lat 18-54
-const LNG_MIN = 73, LNG_MAX = 135;
-const LAT_MIN = 18, LAT_MAX = 54;
-const SVG_W = 800, SVG_H = 640;
+const LNG_MIN = 73, LNG_MAX = 136;
+const LAT_MIN = 17, LAT_MAX = 54;
+const SVG_W = 1000, SVG_H = 760;
 
 function project(lng, lat) {
   const x = ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * SVG_W;
-  // 纬度需要翻转（SVG y轴向下）
   const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * SVG_H;
   return { x, y };
 }
 
+const mapWrapper = document.getElementById('map-wrapper');
+const tooltip = document.getElementById('tooltip');
+
 async function loadMap() {
   try {
-    const res = await fetch('china-provinces.json');
+    const res = await fetch('china-cities-final.json');
     if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const geojson = await res.json();
-    renderMap(geojson);
+    allFeatures = geojson.features;
+    renderMap();
+    renderFilters();
   } catch(e) {
     console.error('Map load failed:', e);
     mapWrapper.innerHTML = '<div class="loading">地图加载失败，请刷新重试</div>';
-    // 仍然渲染城市标记作为fallback
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.id = 'map-svg';
-    svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    CITIES.forEach(city => {
-      const pos = project(city.lng, city.lat);
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('class', 'city-marker' + (travelData[city.name] ? ' visited' : ''));
-      g.setAttribute('data-city', city.name);
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', pos.x.toFixed(1));
-      circle.setAttribute('cy', pos.y.toFixed(1));
-      circle.setAttribute('r', travelData[city.name] ? '5' : '4');
-      g.appendChild(circle);
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      label.setAttribute('class', 'city-label');
-      label.setAttribute('x', pos.x.toFixed(1));
-      label.setAttribute('y', (pos.y - 8).toFixed(1));
-      label.textContent = city.name;
-      g.appendChild(label);
-      g.addEventListener('click', () => openModal(city));
-      svg.appendChild(g);
-    });
-    mapWrapper.innerHTML = '';
-    mapWrapper.appendChild(svg);
-    updateStats();
   }
 }
 
-function renderMap(geojson) {
+function renderMap() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.id = 'map-svg';
   svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-  // 渲染省份
-  geojson.features.forEach(feature => {
-    const provinceName = feature.properties.name;
-    const coords = feature.geometry.coordinates;
-    const geomType = feature.geometry.type;
+  const features = activeProvince === 'all'
+    ? allFeatures
+    : allFeatures.filter(f => f.properties.province === activeProvince);
 
+  features.forEach(feature => {
+    const name = feature.properties.name;
+    const province = feature.properties.province;
+    const geomType = feature.geometry.type;
+    const coords = feature.geometry.coordinates;
     const paths = geomType === 'MultiPolygon' ? coords : [coords];
 
     paths.forEach(polygon => {
@@ -661,62 +384,35 @@ function renderMap(geojson) {
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', pathD);
-        path.setAttribute('class', 'province');
-        path.setAttribute('data-province', provinceName);
+        path.setAttribute('class', 'city-region');
+        path.setAttribute('data-city', name);
+        path.setAttribute('data-province', province);
 
-        // 检查该省份是否有城市被访问
-        const hasVisited = CITIES.some(c =>
-          c.province === provinceName && travelData[c.name]
-        );
-        if (hasVisited) path.classList.add('visited');
+        if (travelData[name]) path.classList.add('visited');
 
-        // hover
         path.addEventListener('mouseenter', (e) => {
-          showTooltip(provinceName, e);
+          const info = travelData[name];
+          showTooltip(info ? `${name} · ${info.date || '已到访'}` : name, e);
         });
-        path.addEventListener('mouseleave', () => {
-          hideTooltip();
-        });
+        path.addEventListener('mouseleave', () => hideTooltip());
+        path.addEventListener('mousemove', (e) => moveTooltip(e));
+        path.addEventListener('click', () => openModal(name, province));
 
         svg.appendChild(path);
       });
     });
-  });
 
-  // 渲染城市标记
-  CITIES.forEach(city => {
-    const pos = project(city.lng, city.lat);
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('class', 'city-marker' + (travelData[city.name] ? ' visited' : ''));
-    g.setAttribute('data-city', city.name);
-
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', pos.x.toFixed(1));
-    circle.setAttribute('cy', pos.y.toFixed(1));
-    circle.setAttribute('r', travelData[city.name] ? '5' : '4');
-    g.appendChild(circle);
-
-    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('class', 'city-label');
-    label.setAttribute('x', pos.x.toFixed(1));
-    label.setAttribute('y', (pos.y - 8).toFixed(1));
-    label.textContent = city.name;
-    g.appendChild(label);
-
-    // hover
-    g.addEventListener('mouseenter', (e) => {
-      const info = travelData[city.name];
-      showTooltip(info ? `${city.name} · ${info.date || '已到访'}` : city.name, e);
-    });
-    g.addEventListener('mouseleave', () => hideTooltip());
-
-    // click
-    g.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openModal(city);
-    });
-
-    svg.appendChild(g);
+    // Add city name label at center
+    if (feature.properties.center) {
+      const [lng, lat] = feature.properties.center;
+      const pos = project(lng, lat);
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('class', 'city-label');
+      label.setAttribute('x', pos.x.toFixed(1));
+      label.setAttribute('y', (pos.y + 2).toFixed(1));
+      label.textContent = name.replace(/(市|自治州|地区|盟)$/, '');
+      svg.appendChild(label);
+    }
   });
 
   mapWrapper.innerHTML = '';
@@ -724,255 +420,199 @@ function renderMap(geojson) {
   updateStats();
 }
 
-function renderCitiesOnly() {
-  // Fallback: just show city dots without map background
-  const svg = `<svg id="map-svg" viewBox="0 0 ${SVG_W} ${SVG_H}" preserveAspectRatio="xMidYMid meet">
-    ${CITIES.map(city => {
-      const pos = project(city.lng, city.lat);
-      const visited = travelData[city.name] ? 'visited' : '';
-      return `<g class="city-marker ${visited}" data-city="${city.name}" onclick="void(0)">
-        <circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${travelData[city.name] ? 5 : 4}" />
-        <text class="city-label" x="${pos.x.toFixed(1)}" y="${(pos.y-8).toFixed(1)}">${city.name}</text>
-      </g>`;
-    }).join('')}
-  </svg>`;
-  return svg;
+function renderFilters() {
+  const provinces = [...new Set(allFeatures.map(f => f.properties.province))].sort();
+  const bar = document.getElementById('filter-bar');
+  
+  const allChip = document.createElement('span');
+  allChip.className = 'filter-chip active';
+  allChip.textContent = '全部';
+  allChip.onclick = () => { activeProvince = 'all'; renderFilters(); renderMap(); };
+  bar.innerHTML = '';
+  bar.appendChild(allChip);
+
+  provinces.forEach(p => {
+    const chip = document.createElement('span');
+    chip.className = 'filter-chip' + (activeProvince === p ? ' active' : '');
+    chip.textContent = p;
+    chip.onclick = () => { activeProvince = p; renderFilters(); renderMap(); };
+    bar.appendChild(chip);
+  });
+
+  // Mark active
+  bar.querySelectorAll('.filter-chip').forEach(c => {
+    if ((c.textContent === '全部' && activeProvince === 'all') || c.textContent === activeProvince) {
+      c.classList.add('active');
+    } else {
+      c.classList.remove('active');
+    }
+  });
 }
 
-// ============ Tooltip ============
 function showTooltip(text, e) {
   tooltip.textContent = text;
-  const rect = mapWrapper.getBoundingClientRect();
-  tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
-  tooltip.style.top = (e.clientY - rect.top + 12) + 'px';
+  moveTooltip(e);
   tooltip.classList.add('visible');
 }
-
-function hideTooltip() {
-  tooltip.classList.remove('visible');
+function moveTooltip(e) {
+  const rect = mapWrapper.getBoundingClientRect();
+  let x = e.clientX - rect.left + 12;
+  let y = e.clientY - rect.top + 12;
+  if (x + tooltip.offsetWidth > rect.width) x = e.clientX - rect.left - tooltip.offsetWidth - 8;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
 }
+function hideTooltip() { tooltip.classList.remove('visible'); }
 
-// ============ Modal ============
+// Modal
 const modalOverlay = document.getElementById('modal-overlay');
 const modalCityName = document.getElementById('modal-city-name');
+const modalCityProvince = document.getElementById('modal-city-province');
 const visitDate = document.getElementById('visit-date');
 const visitNotes = document.getElementById('visit-notes');
 const photoUrls = document.getElementById('photo-urls');
 const photoPreview = document.getElementById('photo-preview');
-const addPhotoBtn = document.getElementById('add-photo');
-const btnSave = document.getElementById('btn-save');
-const btnCancel = document.getElementById('btn-cancel');
-const btnRemove = document.getElementById('btn-remove');
-const modalClose = document.getElementById('modal-close');
 
-function openModal(city) {
-  currentCity = city;
-  modalCityName.textContent = city.name;
-  const data = travelData[city.name] || {};
+function openModal(name, province) {
+  currentCity = { name, province };
+  modalCityName.textContent = name;
+  modalCityProvince.textContent = province;
+  const data = travelData[name] || {};
   visitDate.value = data.date || '';
   visitNotes.value = data.notes || '';
-
-  // Photos
   photoUrls.innerHTML = '';
   photoPreview.innerHTML = '';
-  const photos = data.photos || [];
-  photos.forEach(url => addPhotoRow(url));
-
-  btnRemove.style.display = data.date ? 'block' : 'none';
+  (data.photos || []).forEach(url => addPhotoRow(url));
+  document.getElementById('btn-remove').style.display = data.date ? 'block' : 'none';
   modalOverlay.classList.add('visible');
 }
-
-function closeModal() {
-  modalOverlay.classList.remove('visible');
-  currentCity = null;
-}
+function closeModal() { modalOverlay.classList.remove('visible'); currentCity = null; }
 
 function addPhotoRow(url = '') {
   const row = document.createElement('div');
   row.className = 'photo-url-row';
   const input = document.createElement('input');
-  input.type = 'text';
-  input.value = url;
-  input.placeholder = '粘贴照片链接...';
+  input.type = 'text'; input.value = url; input.placeholder = '粘贴照片链接...';
   input.addEventListener('input', updatePhotoPreview);
   const btn = document.createElement('button');
-  btn.className = 'remove-photo';
-  btn.textContent = '\u00d7';
+  btn.className = 'remove-photo'; btn.textContent = '\u00d7';
   btn.onclick = () => { row.remove(); updatePhotoPreview(); };
-  row.appendChild(input);
-  row.appendChild(btn);
+  row.appendChild(input); row.appendChild(btn);
   photoUrls.appendChild(row);
   if (url) updatePhotoPreview();
 }
-
 function updatePhotoPreview() {
-  const urls = Array.from(photoUrls.querySelectorAll('input'))
-    .map(i => i.value.trim())
-    .filter(u => u);
+  const urls = Array.from(photoUrls.querySelectorAll('input')).map(i => i.value.trim()).filter(u => u);
   photoPreview.innerHTML = '';
   urls.forEach(url => {
     const img = document.createElement('img');
-    img.src = url;
-    img.onerror = () => { img.style.display = 'none'; };
+    img.src = url; img.onerror = () => { img.style.display = 'none'; };
     photoPreview.appendChild(img);
   });
 }
 
-addPhotoBtn.onclick = () => addPhotoRow();
-
-btnSave.onclick = () => {
+document.getElementById('add-photo').onclick = () => addPhotoRow();
+document.getElementById('btn-save').onclick = () => {
   if (!currentCity) return;
   const date = visitDate.value.trim();
   const notes = visitNotes.value.trim();
-  const photos = Array.from(photoUrls.querySelectorAll('input'))
-    .map(i => i.value.trim()).filter(u => u);
-
+  const photos = Array.from(photoUrls.querySelectorAll('input')).map(i => i.value.trim()).filter(u => u);
   if (!date && !notes && photos.length === 0) {
     delete travelData[currentCity.name];
   } else {
     travelData[currentCity.name] = { date, notes, photos };
   }
   saveData(travelData);
-  closeModal();
-  refreshMap();
-  showToast('已保存');
+  closeModal(); refreshMap(); showToast('已保存');
 };
-
-btnRemove.onclick = () => {
+document.getElementById('btn-remove').onclick = () => {
   if (!currentCity) return;
   delete travelData[currentCity.name];
-  saveData(travelData);
-  closeModal();
-  refreshMap();
-  showToast('已删除');
+  saveData(travelData); closeModal(); refreshMap(); showToast('已删除');
 };
-
-btnCancel.onclick = closeModal;
-modalClose.onclick = closeModal;
+document.getElementById('btn-cancel').onclick = closeModal;
+document.getElementById('modal-close').onclick = closeModal;
 modalOverlay.onclick = (e) => { if (e.target === modalOverlay) closeModal(); };
 
 function refreshMap() {
-  // Update city markers
-  document.querySelectorAll('.city-marker').forEach(el => {
+  document.querySelectorAll('.city-region').forEach(el => {
     const name = el.getAttribute('data-city');
-    const circle = el.querySelector('circle');
-    const label = el.querySelector('.city-label');
-    if (travelData[name]) {
-      el.classList.add('visited');
-      circle.setAttribute('r', '5');
-    } else {
-      el.classList.remove('visited');
-      circle.setAttribute('r', '4');
-    }
-  });
-
-  // Update provinces
-  document.querySelectorAll('.province').forEach(el => {
-    const prov = el.getAttribute('data-province');
-    const hasVisited = CITIES.some(c => c.province === prov && travelData[c.name]);
-    if (hasVisited) el.classList.add('visited');
+    if (travelData[name]) el.classList.add('visited');
     else el.classList.remove('visited');
   });
-
   updateStats();
 }
 
-// ============ Stats & Sidebar ============
 function updateStats() {
   const visited = Object.keys(travelData).filter(k => travelData[k].date).length;
-  const total = CITIES.length;
-
+  const total = allFeatures.length;
   document.getElementById('stat-visited').textContent = visited;
   document.getElementById('stat-total').textContent = total;
-
   const pct = total > 0 ? Math.round(visited / total * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${visited} / ${total}`;
   document.getElementById('progress-percent').textContent = pct + '%';
 
-  // Visited list
   const list = document.getElementById('visited-list');
   const visitedCities = Object.keys(travelData).filter(k => travelData[k].date);
   if (visitedCities.length === 0) {
-    list.innerHTML = '<div class="empty-state">还没有记录到访的城市<br>点击地图上的城市标记开始记录</div>';
+    list.innerHTML = '<div class="empty-state">还没有记录到访的城市<br>点击地图上的城市开始记录</div>';
   } else {
     list.innerHTML = visitedCities
       .sort((a, b) => (travelData[b].date || '').localeCompare(travelData[a].date || ''))
       .map(name => {
-        const city = CITIES.find(c => c.name === name);
+        const feat = allFeatures.find(f => f.properties.name === name);
+        const prov = feat ? feat.properties.province : '';
         return `<div class="visited-item" data-city="${name}">
           <span class="city-name">${name}</span>
           <span class="visit-date">${travelData[name].date || ''}</span>
         </div>`;
       }).join('');
-
     list.querySelectorAll('.visited-item').forEach(el => {
       el.onclick = () => {
         const name = el.getAttribute('data-city');
-        const city = CITIES.find(c => c.name === name);
-        if (city) openModal(city);
+        const feat = allFeatures.find(f => f.properties.name === name);
+        openModal(name, feat ? feat.properties.province : '');
       };
     });
   }
 }
 
-// ============ Toast ============
 const toast = document.getElementById('toast');
 let toastTimer;
 function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('visible');
+  toast.textContent = msg; toast.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2000);
 }
 
-// ============ Import / Export ============
 document.getElementById('btn-export').onclick = () => {
   const blob = new Blob([JSON.stringify(travelData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `travel-data-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('已导出');
+  a.href = url; a.download = `travel-data-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(url); showToast('已导出');
 };
-
-document.getElementById('btn-import').onclick = () => {
-  document.getElementById('import-file').click();
-};
-
+document.getElementById('btn-import').onclick = () => document.getElementById('import-file').click();
 document.getElementById('import-file').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
     try {
       const data = JSON.parse(ev.target.result);
       travelData = { ...travelData, ...data };
-      saveData(travelData);
-      refreshMap();
-      showToast('已导入');
-    } catch(err) {
-      showToast('导入失败：文件格式错误');
-    }
+      saveData(travelData); refreshMap(); showToast('已导入');
+    } catch(err) { showToast('导入失败：文件格式错误'); }
   };
-  reader.readAsText(file);
-  e.target.value = '';
+  reader.readAsText(file); e.target.value = '';
 };
-
 document.getElementById('btn-clear').onclick = () => {
   if (confirm('确定清空所有旅行记录吗？此操作不可撤销。')) {
-    travelData = {};
-    saveData(travelData);
-    refreshMap();
-    showToast('已清空');
+    travelData = {}; saveData(travelData); refreshMap(); showToast('已清空');
   }
 };
 
-// ============ Init ============
 loadMap();
 </script>
-
 </body>
 </html>
