@@ -678,51 +678,64 @@ document.getElementById('btn-share').onclick = async () => {
   btn.disabled = true;
   btn.style.opacity = '0.6';
   
-  try {
-    const res = await fetch('https://da.gd/s/?url=' + encodeURIComponent(longUrl));
-    if (!res.ok) throw new Error('da.gd HTTP ' + res.status);
-    const shortUrl = (await res.text()).trim();
-    if (shortUrl.startsWith('http')) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(shortUrl);
-        showToast('短链接已复制：' + shortUrl);
-      } else {
-        // 降级：用临时input复制
-        const tmp = document.createElement('input');
-        tmp.value = shortUrl;
-        document.body.appendChild(tmp);
-        tmp.select();
-        document.execCommand('copy');
-        document.body.removeChild(tmp);
-        showToast('短链接已复制：' + shortUrl);
+  // 尝试多个短链服务
+  const services = [
+    'https://tinyurl.com/api-create.php?url=',
+    'https://da.gd/s/?url='
+  ];
+  
+  for (const svc of services) {
+    try {
+      const res = await fetch(svc + encodeURIComponent(longUrl));
+      if (!res.ok) continue;
+      const shortUrl = (await res.text()).trim();
+      if (shortUrl.startsWith('http')) {
+        // 复制到剪贴板
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shortUrl);
+          } else {
+            const tmp = document.createElement('input');
+            tmp.value = shortUrl;
+            document.body.appendChild(tmp);
+            tmp.select();
+            document.execCommand('copy');
+            document.body.removeChild(tmp);
+          }
+          showToast('短链接已复制：' + shortUrl);
+        } catch(e) {
+          prompt('复制短链接分享给朋友：', shortUrl);
+        }
+        btn.textContent = origText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        return;
       }
+    } catch(e) {
+      console.error(svc + ' failed:', e);
+    }
+  }
+  
+  // 所有短链服务都失败，复制长链接
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(longUrl);
+      showToast('已复制分享链接');
     } else {
-      throw new Error('da.gd返回异常: ' + shortUrl);
+      const tmp = document.createElement('input');
+      tmp.value = longUrl;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+      showToast('已复制分享链接');
     }
   } catch(e) {
-    console.error('短链生成失败:', e);
-    // 降级：复制压缩后的长链接
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(longUrl);
-        showToast('短链服务暂不可用，已复制链接');
-      } else {
-        const tmp = document.createElement('input');
-        tmp.value = longUrl;
-        document.body.appendChild(tmp);
-        tmp.select();
-        document.execCommand('copy');
-        document.body.removeChild(tmp);
-        showToast('已复制链接（较长）');
-      }
-    } catch(e2) {
-      prompt('复制链接分享给朋友：', longUrl);
-    }
-  } finally {
-    btn.textContent = origText;
-    btn.disabled = false;
-    btn.style.opacity = '1';
+    prompt('复制链接分享给朋友：', longUrl);
   }
+  btn.textContent = origText;
+  btn.disabled = false;
+  btn.style.opacity = '1';
 };
 
 // === 只读分享模式 ===
