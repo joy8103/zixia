@@ -601,13 +601,40 @@ function project(lng, lat) {
 
 async function loadMap() {
   try {
-    const res = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
-    if (!res.ok) throw new Error('fetch failed');
+    const res = await fetch('china-provinces.json');
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
     const geojson = await res.json();
     renderMap(geojson);
   } catch(e) {
     console.error('Map load failed:', e);
-    mapWrapper.innerHTML = '<div class="loading">地图加载失败，请刷新重试。也可直接点击城市标记操作。</div>' + renderCitiesOnly();
+    mapWrapper.innerHTML = '<div class="loading">地图加载失败，请刷新重试</div>';
+    // 仍然渲染城市标记作为fallback
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'map-svg';
+    svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    CITIES.forEach(city => {
+      const pos = project(city.lng, city.lat);
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'city-marker' + (travelData[city.name] ? ' visited' : ''));
+      g.setAttribute('data-city', city.name);
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', pos.x.toFixed(1));
+      circle.setAttribute('cy', pos.y.toFixed(1));
+      circle.setAttribute('r', travelData[city.name] ? '5' : '4');
+      g.appendChild(circle);
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('class', 'city-label');
+      label.setAttribute('x', pos.x.toFixed(1));
+      label.setAttribute('y', (pos.y - 8).toFixed(1));
+      label.textContent = city.name;
+      g.appendChild(label);
+      g.addEventListener('click', () => openModal(city));
+      svg.appendChild(g);
+    });
+    mapWrapper.innerHTML = '';
+    mapWrapper.appendChild(svg);
+    updateStats();
   }
 }
 
