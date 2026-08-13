@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>旅行地图 · 我的足迹</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -657,7 +660,6 @@ document.getElementById('btn-share').onclick = async () => {
     showToast('还没有到访记录，先添加城市吧');
     return;
   }
-  // 压缩数据：只取已访问城市的关键信息
   const shareData = {};
   visited.forEach(k => {
     shareData[k] = {
@@ -670,64 +672,78 @@ document.getElementById('btn-share').onclick = async () => {
   const encoded = LZString.compressToEncodedURIComponent(json);
   const longUrl = location.origin + location.pathname + '#s=' + encoded;
   
-  showToast('正在生成短链接...');
+  const btn = document.getElementById('btn-share');
+  const origText = btn.textContent;
+  btn.textContent = '生成中...';
+  btn.disabled = true;
+  
   try {
     const res = await fetch('https://da.gd/s/?url=' + encodeURIComponent(longUrl));
     const shortUrl = (await res.text()).trim();
     if (shortUrl.startsWith('http')) {
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(shortUrl).then(() => showToast('短链接已复制：' + shortUrl));
+        await navigator.clipboard.writeText(shortUrl);
+        showToast('短链接已复制：' + shortUrl);
       } else {
         prompt('复制短链接分享给朋友：', shortUrl);
       }
     } else {
-      throw new Error('shorten failed');
+      throw new Error('shorten failed: ' + shortUrl);
     }
   } catch(e) {
-    // 降级：直接复制长链接
+    console.error('Short URL failed:', e);
+    // 降级：复制压缩后的长链接
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(longUrl).then(() => showToast('短链服务不可用，已复制长链接'));
+      await navigator.clipboard.writeText(longUrl);
+      showToast('短链服务暂不可用，已复制链接（较长）');
     } else {
       prompt('复制链接分享给朋友：', longUrl);
     }
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
   }
 };
 
 // === 只读分享模式 ===
 function checkShareMode() {
   const hash = location.hash;
-  if (hash.startsWith('#s=')) {
-    try {
-      const encoded = hash.substring(3);
-      const json = LZString.decompressFromEncodedURIComponent(encoded);
-      if (!json) { console.error('Decompress failed'); return false; }
-      const sharedData = JSON.parse(json);
-      // 转换回完整格式
-      const readOnlyData = {};
-      Object.keys(sharedData).forEach(k => {
-        readOnlyData[k] = {
-          date: sharedData[k].d || '',
-          notes: sharedData[k].n || '',
-          photos: sharedData[k].p || []
-        };
-      });
-      travelData = readOnlyData;
-      isReadOnly = true;
-      // 隐藏编辑相关 UI
-      document.getElementById('btn-export').style.display = 'none';
-      document.getElementById('btn-import').style.display = 'none';
-      document.getElementById('btn-share').style.display = 'none';
-      document.getElementById('btn-clear').style.display = 'none';
-      // 修改标题
-      document.querySelector('.map-header h2').textContent = '中国旅行足迹（分享）';
-      document.querySelector('.nav-brand').innerHTML = '<span class="dot"></span>旅行地图 · 分享';
-      return true;
-    } catch(e) {
-      console.error('Share data parse error:', e);
+  let encoded, json;
+  try {
+    if (hash.startsWith('#s=')) {
+      // LZ-String 压缩格式
+      encoded = hash.substring(3);
+      json = LZString.decompressFromEncodedURIComponent(encoded);
+    } else if (hash.startsWith('#share=')) {
+      // 旧版 base64 格式（向后兼容）
+      encoded = hash.substring(7);
+      json = decodeURIComponent(escape(atob(encoded)));
+    } else {
       return false;
     }
+    if (!json) { console.error('Decompress failed'); return false; }
+    const sharedData = JSON.parse(json);
+    const readOnlyData = {};
+    Object.keys(sharedData).forEach(k => {
+      readOnlyData[k] = {
+        date: sharedData[k].d || sharedData[k].date || '',
+        notes: sharedData[k].n || sharedData[k].notes || '',
+        photos: sharedData[k].p || sharedData[k].photos || []
+      };
+    });
+    travelData = readOnlyData;
+    isReadOnly = true;
+    document.getElementById('btn-export').style.display = 'none';
+    document.getElementById('btn-import').style.display = 'none';
+    document.getElementById('btn-share').style.display = 'none';
+    document.getElementById('btn-clear').style.display = 'none';
+    document.querySelector('.map-header h2').textContent = '中国旅行足迹（分享）';
+    document.querySelector('.nav-brand').innerHTML = '<span class="dot"></span>旅行地图 · 分享';
+    return true;
+  } catch(e) {
+    console.error('Share data parse error:', e);
+    return false;
   }
-  return false;
 }
 
 let isReadOnly = false;
