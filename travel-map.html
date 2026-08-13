@@ -273,6 +273,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary" id="btn-export" style="font-size:12px;padding:6px 14px;">导出</button>
         <button class="btn btn-secondary" id="btn-import" style="font-size:12px;padding:6px 14px;">导入</button>
+        <button class="btn btn-primary" id="btn-share" style="font-size:12px;padding:6px 14px;">分享</button>
         <button class="btn btn-danger" id="btn-clear" style="font-size:12px;padding:6px 14px;">清空</button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none;">
@@ -416,45 +417,15 @@ function renderMap() {
       });
     });
 
-    // 微型区域（澳门等）添加可见标记圆
-    if (isMicro && feature.properties.center) {
-      const [lng, lat] = feature.properties.center;
-      const pos = project(lng, lat);
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', pos.x.toFixed(1));
-      circle.setAttribute('cy', pos.y.toFixed(1));
-      circle.setAttribute('r', '4');
-      circle.setAttribute('class', 'city-region');
-      circle.setAttribute('data-city', name);
-      circle.setAttribute('data-province', province);
-      circle.style.fill = travelData[name] ? 'var(--visited-fill)' : '#666';
-      circle.style.stroke = '#444';
-      circle.style.strokeWidth = '1';
-      circle.style.cursor = 'pointer';
-
-      circle.addEventListener('mouseenter', (e) => {
-        const info = travelData[name];
-        showTooltip(info ? `${name} · ${info.date || '已到访'}` : name, e);
-      });
-      circle.addEventListener('mouseleave', () => hideTooltip());
-      circle.addEventListener('mousemove', (e) => moveTooltip(e));
-      circle.addEventListener('click', () => openModal(name, province));
-
-      svg.appendChild(circle);
-    }
-
-    // Add city name label at center
-    if (feature.properties.center) {
+    // Add city name label at center (skip micro regions to avoid clutter)
+    if (feature.properties.center && !isMicro) {
       const [lng, lat] = feature.properties.center;
       const pos = project(lng, lat);
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       label.setAttribute('class', 'city-label');
       label.setAttribute('x', pos.x.toFixed(1));
-      // 微型区域标签偏移一点，避免和标记圆重叠
-      label.setAttribute('y', (pos.y + (isMicro ? 8 : 2)).toFixed(1));
-      label.style.fontSize = isMicro ? '8px' : '7px';
+      label.setAttribute('y', (pos.y + 2).toFixed(1));
       label.textContent = name.replace(/(市|自治州|地区|盟|特别行政区)$/, '');
-      if (isMicro) label.style.opacity = '0.7';
       svg.appendChild(label);
     }
   });
@@ -527,7 +498,25 @@ function openModal(name, province) {
   photoUrls.innerHTML = '';
   photoPreview.innerHTML = '';
   (data.photos || []).forEach(url => addPhotoRow(url));
-  document.getElementById('btn-remove').style.display = data.date ? 'block' : 'none';
+  
+  if (isReadOnly) {
+    // 只读模式：禁用编辑，隐藏保存/删除按钮
+    visitDate.readOnly = true;
+    visitNotes.readOnly = true;
+    document.getElementById('btn-save').style.display = 'none';
+    document.getElementById('btn-remove').style.display = 'none';
+    document.getElementById('add-photo').style.display = 'none';
+    photoUrls.querySelectorAll('input').forEach(i => i.readOnly = true);
+    photoUrls.querySelectorAll('.remove-photo').forEach(b => b.style.display = 'none');
+    // 如果没有记录，不弹窗
+    if (!data.date && !data.notes && !(data.photos || []).length) return;
+  } else {
+    visitDate.readOnly = false;
+    visitNotes.readOnly = false;
+    document.getElementById('btn-save').style.display = 'block';
+    document.getElementById('btn-remove').style.display = data.date ? 'block' : 'none';
+    document.getElementById('add-photo').style.display = 'block';
+  }
   modalOverlay.classList.add('visible');
 }
 function closeModal() { modalOverlay.classList.remove('visible'); currentCity = null; }
@@ -656,7 +645,79 @@ document.getElementById('btn-clear').onclick = () => {
   }
 };
 
+// === 分享功能 ===
+document.getElementById('btn-share').onclick = () => {
+  const visited = Object.keys(travelData).filter(k => travelData[k].date);
+  if (visited.length === 0) {
+    showToast('还没有到访记录，先添加城市吧');
+    return;
+  }
+  // 压缩数据：只取已访问城市的关键信息
+  const shareData = {};
+  visited.forEach(k => {
+    shareData[k] = {
+      d: travelData[k].date || '',
+      n: travelData[k].notes || '',
+      p: travelData[k].photos || []
+    };
+  });
+  const json = JSON.stringify(shareData);
+  // 用 btoa 编码（UTF-8安全）
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  const shareUrl = location.origin + location.pathname + '#share=' + encoded;
+  
+  // 复制到剪贴板
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast('分享链接已复制到剪贴板');
+    }).catch(() => {
+      prompt('复制这个链接分享给朋友：', shareUrl);
+    });
+  } else {
+    prompt('复制这个链接分享给朋友：', shareUrl);
+  }
+};
+
+// === 只读分享模式 ===
+function checkShareMode() {
+  const hash = location.hash;
+  if (hash.startsWith('#share=')) {
+    try {
+      const encoded = hash.substring(7);
+      const json = decodeURIComponent(escape(atob(encoded)));
+      const sharedData = JSON.parse(json);
+      // 转换回完整格式
+      const readOnlyData = {};
+      Object.keys(sharedData).forEach(k => {
+        readOnlyData[k] = {
+          date: sharedData[k].d || '',
+          notes: sharedData[k].n || '',
+          photos: sharedData[k].p || []
+        };
+      });
+      travelData = readOnlyData;
+      isReadOnly = true;
+      // 隐藏编辑相关 UI
+      document.getElementById('btn-export').style.display = 'none';
+      document.getElementById('btn-import').style.display = 'none';
+      document.getElementById('btn-share').style.display = 'none';
+      document.getElementById('btn-clear').style.display = 'none';
+      // 修改标题
+      document.querySelector('.map-header h2').textContent = '中国旅行足迹（分享）';
+      document.querySelector('.nav-brand').innerHTML = '<span class="dot"></span>旅行地图 · 分享';
+      return true;
+    } catch(e) {
+      console.error('Share data parse error:', e);
+      return false;
+    }
+  }
+  return false;
+}
+
+let isReadOnly = false;
+
 loadMap();
+checkShareMode();
 </script>
 </body>
 </html>
