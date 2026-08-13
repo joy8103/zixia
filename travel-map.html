@@ -427,8 +427,8 @@ function renderMap() {
       circle.setAttribute('class', 'city-region');
       circle.setAttribute('data-city', name);
       circle.setAttribute('data-province', province);
-      circle.style.fill = travelData[name] ? 'var(--visited-fill)' : 'var(--accent)';
-      circle.style.stroke = 'var(--accent)';
+      circle.style.fill = travelData[name] ? 'var(--visited-fill)' : '#666';
+      circle.style.stroke = '#444';
       circle.style.strokeWidth = '1';
       circle.style.cursor = 'pointer';
 
