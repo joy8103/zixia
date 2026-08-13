@@ -276,7 +276,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary" id="btn-export" style="font-size:12px;padding:6px 14px;">导出</button>
         <button class="btn btn-secondary" id="btn-import" style="font-size:12px;padding:6px 14px;">导入</button>
-        <button class="btn btn-primary" id="btn-share" style="font-size:12px;padding:6px 14px;">分享</button>
+        <button class="btn btn-secondary" id="btn-share" style="font-size:12px;padding:6px 14px;">分享</button>
         <button class="btn btn-danger" id="btn-clear" style="font-size:12px;padding:6px 14px;">清空</button>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none;">
@@ -444,7 +444,8 @@ function renderMap() {
 }
 
 function renderFilters() {
-  const provinces = [...new Set(allFeatures.map(f => f.properties.province))].sort();
+  // 按拼音排序
+  const provinces = [...new Set(allFeatures.map(f => f.properties.province))].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
   const bar = document.getElementById('filter-bar');
   
   const allChip = document.createElement('span');
@@ -676,32 +677,52 @@ document.getElementById('btn-share').onclick = async () => {
   const origText = btn.textContent;
   btn.textContent = '生成中...';
   btn.disabled = true;
+  btn.style.opacity = '0.6';
   
   try {
     const res = await fetch('https://da.gd/s/?url=' + encodeURIComponent(longUrl));
+    if (!res.ok) throw new Error('da.gd HTTP ' + res.status);
     const shortUrl = (await res.text()).trim();
     if (shortUrl.startsWith('http')) {
-      if (navigator.clipboard) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shortUrl);
         showToast('短链接已复制：' + shortUrl);
       } else {
-        prompt('复制短链接分享给朋友：', shortUrl);
+        // 降级：用临时input复制
+        const tmp = document.createElement('input');
+        tmp.value = shortUrl;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+        showToast('短链接已复制：' + shortUrl);
       }
     } else {
-      throw new Error('shorten failed: ' + shortUrl);
+      throw new Error('da.gd返回异常: ' + shortUrl);
     }
   } catch(e) {
-    console.error('Short URL failed:', e);
+    console.error('短链生成失败:', e);
     // 降级：复制压缩后的长链接
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(longUrl);
-      showToast('短链服务暂不可用，已复制链接（较长）');
-    } else {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(longUrl);
+        showToast('短链服务暂不可用，已复制链接');
+      } else {
+        const tmp = document.createElement('input');
+        tmp.value = longUrl;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+        showToast('已复制链接（较长）');
+      }
+    } catch(e2) {
       prompt('复制链接分享给朋友：', longUrl);
     }
   } finally {
     btn.textContent = origText;
     btn.disabled = false;
+    btn.style.opacity = '1';
   }
 };
 
