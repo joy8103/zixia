@@ -356,6 +356,12 @@ async function loadMap() {
     const geojson = await res.json();
     allFeatures = geojson.features || [];
     if (allFeatures.length === 0) throw new Error('no features in geojson');
+    buildAdcodeMaps();
+    // 如果有待解析的分享数据，现在解码
+    if (window._pendingShareData) {
+      travelData = decodeShareData(window._pendingShareData);
+      delete window._pendingShareData;
+    }
     renderMap();
     renderFilters();
     // 确保分享模式数据正确渲染
@@ -654,88 +660,67 @@ document.getElementById('btn-clear').onclick = () => {
 };
 
 // === 分享功能 ===
+// adcode <-> 城市名 映射（地图加载后建立）
+let cityAdcodeMap = {};  // name -> adcode
+let adcodeCityMap = {};  // adcode -> name
+
+function buildAdcodeMaps() {
+  allFeatures.forEach(f => {
+    const name = f.properties.name;
+    const adcode = String(f.properties.adcode);
+    cityAdcodeMap[name] = adcode;
+    adcodeCityMap[adcode] = name;
+  });
+}
+
 document.getElementById('btn-share').onclick = async () => {
   const visited = Object.keys(travelData).filter(k => travelData[k].date);
   if (visited.length === 0) {
     showToast('还没有到访记录，先添加城市吧');
     return;
   }
-  const shareData = {};
-  visited.forEach(k => {
-    shareData[k] = {
-      d: travelData[k].date || '',
-      n: travelData[k].notes || '',
-      p: travelData[k].photos || []
-    };
-  });
-  const json = JSON.stringify(shareData);
-  const encoded = LZString.compressToEncodedURIComponent(json);
-  const longUrl = location.origin + location.pathname + '#s=' + encoded;
   
+  // 用 adcode + 日期编码（紧凑格式）
+  // 格式：adcode[日期],adcode[日期],...
+  // 日期：多次=空，2017年=17，2020年=20，2023年=23
+  const parts = visited.map(k => {
+    const adcode = cityAdcodeMap[k];
+    if (!adcode) return null;
+    const date = travelData[k].date || '';
+    // 简化日期：去掉"年"字
+    const shortDate = date.replace(/年$/, '').replace(/^20/, '');
+    return adcode + (shortDate && shortDate !== '多次' ? shortDate : '');
+  }).filter(Boolean);
+  
+  const encoded = LZString.compressToEncodedURIComponent(parts.join(','));
+  const shareUrl = location.origin + location.pathname + '#s=' + encoded;
+  
+  // 复制到剪贴板
   const btn = document.getElementById('btn-share');
   const origText = btn.textContent;
-  btn.textContent = '生成中...';
+  btn.textContent = '已复制!';
   btn.disabled = true;
-  btn.style.opacity = '0.6';
   
-  // 尝试多个短链服务
-  const services = [
-    'https://tinyurl.com/api-create.php?url=',
-    'https://da.gd/s/?url='
-  ];
-  
-  for (const svc of services) {
-    try {
-      const res = await fetch(svc + encodeURIComponent(longUrl));
-      if (!res.ok) continue;
-      const shortUrl = (await res.text()).trim();
-      if (shortUrl.startsWith('http')) {
-        // 复制到剪贴板
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(shortUrl);
-          } else {
-            const tmp = document.createElement('input');
-            tmp.value = shortUrl;
-            document.body.appendChild(tmp);
-            tmp.select();
-            document.execCommand('copy');
-            document.body.removeChild(tmp);
-          }
-          showToast('短链接已复制：' + shortUrl);
-        } catch(e) {
-          prompt('复制短链接分享给朋友：', shortUrl);
-        }
-        btn.textContent = origText;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        return;
-      }
-    } catch(e) {
-      console.error(svc + ' failed:', e);
-    }
-  }
-  
-  // 所有短链服务都失败，复制长链接
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(longUrl);
-      showToast('已复制分享链接');
+      await navigator.clipboard.writeText(shareUrl);
     } else {
       const tmp = document.createElement('input');
-      tmp.value = longUrl;
+      tmp.value = shareUrl;
       document.body.appendChild(tmp);
       tmp.select();
       document.execCommand('copy');
       document.body.removeChild(tmp);
-      showToast('已复制分享链接');
     }
+    showToast('分享链接已复制（' + shareUrl.length + '字符）');
   } catch(e) {
-    prompt('复制链接分享给朋友：', longUrl);
+    prompt('复制链接分享给朋友：', shareUrl);
   }
-  btn.textContent = origText;
-  btn.disabled = false;
-  btn.style.opacity = '1';
+  
+  setTimeout(() => {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }, 1500);
 };
 
 // === 只读分享模式 ===
@@ -744,27 +729,48 @@ function checkShareMode() {
   let encoded, json;
   try {
     if (hash.startsWith('#s=')) {
-      // LZ-String 压缩格式
       encoded = hash.substring(3);
-      json = LZString.decompressFromEncodedURIComponent(encoded);
+      const decoded = LZString.decompressFromEncodedURIComponent(encoded);
+      if (!decoded) { console.error('Decompress failed'); return false; }
+      
+      // 尝试解析为新格式（adcode列表）或旧格式（JSON）
+      if (decoded.startsWith('{')) {
+        // 旧格式：JSON
+        json = decoded;
+        const sharedData = JSON.parse(json);
+        const readOnlyData = {};
+        Object.keys(sharedData).forEach(k => {
+          readOnlyData[k] = {
+            date: sharedData[k].d || sharedData[k].date || '',
+            notes: sharedData[k].n || sharedData[k].notes || '',
+            photos: sharedData[k].p || sharedData[k].photos || []
+          };
+        });
+        travelData = readOnlyData;
+      } else {
+        // 新格式：adcode[日期],adcode[日期],...
+        // 需要等地图加载后才能解码（需要adcodeCityMap）
+        // 先存起来，在loadMap完成后处理
+        window._pendingShareData = decoded;
+      }
     } else if (hash.startsWith('#share=')) {
       // 旧版 base64 格式（向后兼容）
       encoded = hash.substring(7);
       json = decodeURIComponent(escape(atob(encoded)));
+      const sharedData = JSON.parse(json);
+      const readOnlyData = {};
+      Object.keys(sharedData).forEach(k => {
+        readOnlyData[k] = {
+          date: sharedData[k].d || sharedData[k].date || '',
+          notes: sharedData[k].n || sharedData[k].notes || '',
+          photos: sharedData[k].p || sharedData[k].photos || []
+        };
+      });
+      travelData = readOnlyData;
     } else {
       return false;
     }
-    if (!json) { console.error('Decompress failed'); return false; }
-    const sharedData = JSON.parse(json);
-    const readOnlyData = {};
-    Object.keys(sharedData).forEach(k => {
-      readOnlyData[k] = {
-        date: sharedData[k].d || sharedData[k].date || '',
-        notes: sharedData[k].n || sharedData[k].notes || '',
-        photos: sharedData[k].p || sharedData[k].photos || []
-      };
-    });
-    travelData = readOnlyData;
+    
     isReadOnly = true;
     document.getElementById('btn-export').style.display = 'none';
     document.getElementById('btn-import').style.display = 'none';
@@ -777,6 +783,33 @@ function checkShareMode() {
     console.error('Share data parse error:', e);
     return false;
   }
+}
+
+// 解码新格式分享数据（adcode列表）
+function decodeShareData(data) {
+  // 格式：adcode[日期],adcode[日期],...
+  // 日期：空=多次，17=2017，20=2020，23=2023
+  const parts = data.split(',');
+  const readOnlyData = {};
+  parts.forEach(part => {
+    // adcode是6位数字，后面可能跟日期
+    const adcode = part.substring(0, 6);
+    const dateCode = part.substring(6);
+    const cityName = adcodeCityMap[adcode];
+    if (!cityName) return;
+    
+    let date = '';
+    if (!dateCode) {
+      date = '多次到访';
+    } else if (dateCode.match(/^\d+$/)) {
+      date = '20' + dateCode + '年';
+    } else {
+      date = dateCode;
+    }
+    
+    readOnlyData[cityName] = { date, notes: '', photos: [] };
+  });
+  return readOnlyData;
 }
 
 let isReadOnly = false;
