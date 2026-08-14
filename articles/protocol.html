@@ -171,6 +171,25 @@
     font-size: 16px;
   }
 
+  article .article-image {
+    margin: 32px 0;
+    text-align: center;
+  }
+
+  article .article-image img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  article .article-image figcaption {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+
   article .end-mark {
     text-align: center;
     margin-top: 60px;
@@ -273,6 +292,11 @@
   <p>"这不是代码bug，"李沉盯着屏幕，喃喃自语，"这是协议本身的设计缺陷。"</p>
   <p>他的声音很轻，但在凌晨三点的实验室里，听起来像一声闷雷。</p>
 
+  <figure class="article-image">
+    <img src="img/lab-night.jpg" alt="凌晨三点的实验室">
+    <figcaption>凌晨三点，屏幕上的光是唯一的亮。</figcaption>
+  </figure>
+
   <h2>三</h2>
   <p>他们花了两天验证。</p>
   <p>天枢的分析是正确的。这个漏洞存在于DNS协议的最底层规则中，不是某个软件实现的问题，而是所有遵循该协议的实现都会继承的基因缺陷。就像一栋大楼的设计图纸上，承重墙的位置画反了——不管你用什么材料施工，大楼都会塌。</p>
@@ -316,6 +340,11 @@
   <p>"小伙子，"老人问，"到底怎么了？"</p>
   <p>收银员摇头。他的手机也打不开任何App，没法查新闻。但他隐约觉得，这次和以前不一样。以前断网是"信号不好"，这次是"系统没了"。</p>
 
+  <figure class="article-image">
+    <img src="img/supermarket.jpg" alt="超市收银台前老人递纸币">
+    <figcaption>一张皱巴巴的十元纸币，像一件出土文物。</figcaption>
+  </figure>
+
   <h2>八</h2>
   <p>第五个小时，军方的应急通信网络启动了。</p>
   <p>国家网络安全应急指挥部在一间没有窗户的会议室里召开了第一次紧急会议。李沉被一辆军车从实验室接走，在路上他第一次知道，不仅是中国——全球所有国家的DNS系统都瘫痪了。这是一次全球性的基础设施灾难，没有国界，没有攻击目标，没有勒索声明。攻击者像幽灵一样来去无踪，而整个数字世界在十五分钟内被还原回了1983年。</p>
@@ -337,6 +366,11 @@
   <p>第七十二小时，互联网基本恢复。</p>
   <p>全球DNS系统的修复工作完成。根服务器率先恢复服务，递归服务器清除了错误缓存，域名解析逐渐回归正常。网站能打开了，邮件开始投递了，云服务重新响应了。人们对着手机屏幕上重新转圈的加载图标发出如释重负的叹息，然后迅速忘记了那三天。</p>
   <p>但有些人忘不了。</p>
+
+  <figure class="article-image">
+    <img src="img/recovery.jpg" alt="城市灯光逐层亮起">
+    <figcaption>每修好一台服务器，互联网就亮起一小片。像萤火虫，一只接一只，连成星河。</figcaption>
+  </figure>
 
   <h2>十一</h2>
   <p>事后统计，这次事件造成了全球约两千七百亿美元的经济损失。四千七百台手术因医疗系统中断而延期，其中十七例被认定与延误有关。三起空险，两起列车追尾，一座化工厂因远程监控失灵发生泄漏。这些数字被写进了事后报告，但很少有人读完——报告有四百页，大部分是技术分析，公众更关心的是下一个短视频。</p>
@@ -374,6 +408,11 @@
   <p>问题是，当我们拥有了这样的眼睛，我们是否也拥有了同样的勇气去面对它看到的一切？</p>
   <p>李沉不知道答案。但他知道，明天早上九点，他还会坐在实验室里，打开天枢，让它读下一段代码。</p>
   <p>窗外的银杏叶在风中沙沙作响，像无数行代码在低语。</p>
+
+  <figure class="article-image">
+    <img src="img/campus-autumn.jpg" alt="深秋校园银杏夜色">
+    <figcaption>银杏叶开始变黄了。远处有一列火车驶过，灯火蜿蜒如蛇。</figcaption>
+  </figure>
 
   <div class="end-mark">（全文完）</div>
 </article>
